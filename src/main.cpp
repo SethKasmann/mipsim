@@ -11,58 +11,58 @@
 const int MAX_REG = 32;
 typedef uint32_t Instruction;
 
-const Instruction Addi  = 1  << 26;
-const Instruction Addiu = 2  << 26;
-const Instruction Andi  = 3  << 26;
-const Instruction Beq   = 4  << 26;
-const Instruction Bne   = 5  << 26;
-const Instruction Lbu   = 6  << 26;
-const Instruction Lhu   = 7  << 26;
-const Instruction Lui   = 8  << 26;
-const Instruction Lw    = 9  << 26;
-const Instruction Ori   = 10 << 26;
-const Instruction Sb    = 11 << 26;
-const Instruction Sh    = 12 << 26;
-const Instruction Slti  = 13 << 26;
+const Instruction Addi = 1 << 26;
+const Instruction Addiu = 2 << 26;
+const Instruction Andi = 3 << 26;
+const Instruction Beq = 4 << 26;
+const Instruction Bne = 5 << 26;
+const Instruction Lbu = 6 << 26;
+const Instruction Lhu = 7 << 26;
+const Instruction Lui = 8 << 26;
+const Instruction Lw = 9 << 26;
+const Instruction Ori = 10 << 26;
+const Instruction Sb = 11 << 26;
+const Instruction Sh = 12 << 26;
+const Instruction Slti = 13 << 26;
 const Instruction Sltiu = 14 << 26;
-const Instruction Sw    = 15 << 26;
-const Instruction J     = 16 << 26;
-const Instruction Jal   = 17 << 26;
+const Instruction Sw = 15 << 26;
+const Instruction J = 16 << 26;
+const Instruction Jal = 17 << 26;
 
-const Instruction Add   = 1;
-const Instruction Addu  = 2;
-const Instruction And   = 3;
-const Instruction Div   = 4;
-const Instruction Divu  = 5;
-const Instruction Jr    = 6;
-const Instruction Mfc0  = 7;
-const Instruction Mfhi  = 8;
-const Instruction Mflo  = 9;
-const Instruction Mult  = 10;
+const Instruction Add = 1;
+const Instruction Addu = 2;
+const Instruction And = 3;
+const Instruction Div = 4;
+const Instruction Divu = 5;
+const Instruction Jr = 6;
+const Instruction Mfc0 = 7;
+const Instruction Mfhi = 8;
+const Instruction Mflo = 9;
+const Instruction Mult = 10;
 const Instruction Multu = 11;
-const Instruction Nor   = 12;
-const Instruction Or    = 13;
-const Instruction Sll   = 14;
-const Instruction Slt   = 15;
-const Instruction Sltu  = 16;
-const Instruction Sra   = 17;
-const Instruction Srl   = 18;
-const Instruction Sub   = 19;
-const Instruction Subu  = 20;
-const Instruction Xor   = 21;
+const Instruction Nor = 12;
+const Instruction Or = 13;
+const Instruction Sll = 14;
+const Instruction Slt = 15;
+const Instruction Sltu = 16;
+const Instruction Sra = 17;
+const Instruction Srl = 18;
+const Instruction Sub = 19;
+const Instruction Subu = 20;
+const Instruction Xor = 21;
 
 const std::map<std::string, Instruction> Map_str_to_type =
 {
-	{"addi", Addi}, {"addiu", Addiu}, {"andi", Andi}, {"beq", Beq},
-	{"bne",  Bne }, {"lbu",   Lbu  }, {"lhu",  Lhu }, {"lui", Lui},
-	{"lw",   Lw  }, {"ori",   Ori  }, {"sb",   Sb  }, {"sh", Sh},
-	{"slti", Slti}, {"sltiu", Sltiu}, {"sw",   Sw  }, {"j", J},
-	{"jal",  Jal }, {"add",   Add  }, {"addu", Addu}, {"and", And},
-	{"div",  Div }, {"divu",  Divu }, {"jr",   Jr  }, {"mfc0", Mfc0},
-	{"mfhi", Mfhi}, {"mflo",  Mflo }, {"mult", Mult}, {"multu", Multu},
-	{"nor",  Nor }, {"or",    Or   }, {"sll",  Sll }, {"slt", Slt},
-	{"sltu", Sltu}, {"sra",   Sra  }, {"srl",  Srl }, {"sub", Sub},
-	{"subu", Subu}, {"xor",   Xor  }
+	{ "addi", Addi },{ "addiu", Addiu },{ "andi", Andi },{ "beq", Beq },
+	{ "bne",  Bne },{ "lbu",   Lbu },{ "lhu",  Lhu },{ "lui", Lui },
+	{ "lw",   Lw },{ "ori",   Ori },{ "sb",   Sb },{ "sh", Sh },
+	{ "slti", Slti },{ "sltiu", Sltiu },{ "sw",   Sw },{ "j", J },
+	{ "jal",  Jal },{ "add",   Add },{ "addu", Addu },{ "and", And },
+	{ "div",  Div },{ "divu",  Divu },{ "jr",   Jr },{ "mfc0", Mfc0 },
+	{ "mfhi", Mfhi },{ "mflo",  Mflo },{ "mult", Mult },{ "multu", Multu },
+	{ "nor",  Nor },{ "or",    Or },{ "sll",  Sll },{ "slt", Slt },
+	{ "sltu", Sltu },{ "sra",   Sra },{ "srl",  Srl },{ "sub", Sub },
+	{ "subu", Subu },{ "xor",   Xor }
 };
 
 bool j_type(Instruction i)
@@ -108,26 +108,7 @@ Instruction generate(const std::string& s)
 	lowercase(token);
 	// May need to check if there is no instruction (eg, next to a label)
 	i = Map_str_to_type.at(token);
-
-	token = "";
-	for (it; it != s.end(), *it != ','; ++it)
-	{
-		if (isspace(*it))
-			continue;
-		token.push_back(*it);
-	}
-	if (token != "")
-	{
-		// Check for register.
-		if (*token.begin() == '$')
-		// Check for label.
-		else if (isalpha(*token.begin()))
-		// Immediate value.
-		else
-			//
-	}
-
-
+	return 0;
 }
 
 int opcode(Instruction i)
@@ -187,7 +168,7 @@ enum LabelType
 struct Data
 {
 	Data(int v, DataType t)
-	  : value(v), type(t)
+		: value(v), type(t)
 	{}
 	int value;
 	DataType type;
@@ -196,18 +177,16 @@ struct Data
 class Label
 {
 public:
-	Label(const std::string& line, LabelType lt, std::size_t index)
-	  : loc(index)
+	Label(const std::string& line, std::size_t index)
+		: loc(index)
 	{
 		// Set label.
 		std::string::const_iterator it0, it1;
 		for (it0 = line.begin(); it0 < line.end(), isspace(*it0); ++it0);
 		for (it1 = it0; it1 < line.end(), *it1 != ':'; ++it1);
 		name = std::string(it0, it1);
-		type = lt;
 	}
 	int loc;
-	LabelType type;
 	std::string name;
 private:
 };
@@ -287,7 +266,7 @@ int reg_to_int(std::string& s)
 	// Handle register number;
 	else
 		assert(std::stoi(s) >= 0 && std::stoi(s) <= 31);
-		return std::stoi(s);
+	return std::stoi(s);
 }
 
 // Returns the correct escape character. Assumes c follows a '\'
@@ -297,43 +276,43 @@ char get_escape(char c)
 	return c == 'n' ? '\n' : c == 't' ? '\t' : '\0';
 }
 
-void ascii_to_mem(const std::string& s, std::vector<Data>& mem_d)
+void ascii_to_mem(const std::string& s, std::vector<uint32_t>& mem)
 {
 	//auto it0, it1;
-	auto it0 = std::find( s.begin(),  s.end(), '"');
+	auto it0 = std::find(s.begin(), s.end(), '"');
 	for (auto it1 = s.end(); it1 >= s.begin(); --it1)
 	{
 		if (*it1 == '"')
 		{
 			for (++it0; it0 < it1; ++it0)
 				if (*it0 == '\\')
-					mem_d.push_back(Data(static_cast<int>(get_escape(*++it0)), ascii));
+					mem.push_back(static_cast<int>(get_escape(*++it0)));
 				else
-					mem_d.push_back(Data(static_cast<int>(*it0), ascii));
+					mem.push_back(static_cast<int>(*it0));
 			break;
 		}
 	}
 }
 
-void asciiz_to_mem(const std::string& s, std::vector<Data>& mem_d)
+void asciiz_to_mem(const std::string& s, std::vector<uint32_t>& mem)
 {
-	ascii_to_mem(s, mem_d);
-	mem_d.push_back(Data(static_cast<int>('\0'), ascii));
+	ascii_to_mem(s, mem);
+	mem.push_back(static_cast<int>('\0'));
 }
 
-void byte_to_mem(const std::string& s, std::vector<Data>& mem_d)
+void byte_to_mem(const std::string& s, std::vector<uint32_t>& mem)
 {
 	// Find the first apostrophe.
 	auto it = std::find(s.begin(), s.end(), '\'');
-	while(it != s.end())
+	while (it != s.end())
 	{
 		assert(it + 1 != s.end());
 		++it;
 		// Handle escape characters
 		if (*it == '\\')
-			mem_d.push_back(Data(static_cast<int>(get_escape(*++it)), ascii));
+			mem.push_back(static_cast<int>(get_escape(*++it)));
 		else
-			mem_d.push_back(Data(static_cast<int>(*it), ascii));
+			mem.push_back(static_cast<int>(*it));
 		it = std::find(it, s.end(), ',');
 		// Return for a single character or at the end of the array.
 		if (it == s.end())
@@ -343,63 +322,63 @@ void byte_to_mem(const std::string& s, std::vector<Data>& mem_d)
 	}
 }
 
-void word_to_mem(const std::string& s, std::vector<Data>& mem_d)
+void word_to_mem(const std::string& s, std::vector<uint32_t>& mem)
 {
 	// Don't rule out the possibility there is a number in the lable. First,
 	// find the colon at the end of the label. Then iterate and search for 
 	// numbers using isdigit()
-	std::string integer = "";
+	std::string word = "";
 	for (auto it = std::find(s.begin(), s.end(), ':'); it != s.end(); ++it)
 	{
 		if (isdigit(*it))
-			integer.push_back(*it);
-		else if (integer != "")
+			word.push_back(*it);
+		else if (word != "")
 		{
-			mem_d.push_back(Data(std::stoi(integer), word));
-			integer = "";
+			mem.push_back(std::stoi(word));
+			word = "";
 		}
 	}
-	if (integer != "")
-		mem_d.push_back(Data(std::stoi(integer), word));
+	if (word != "")
+		mem.push_back(std::stoi(word));
 }
 
 /*
-	void set_data(std::string& s)
-	{
-		assert(type != type_none);
+void set_data(std::string& s)
+{
+assert(type != type_none);
 
-		if (type == type_int)
-		{
-			// Count the number of commas to figure out the size of the array.
+if (type == type_int)
+{
+// Count the number of commas to figure out the size of the array.
 
-		}
-		if (type == type_str)
-		{
-			std::size_t start, end;
-			start = s.find_first_of('\"') + 1;
-			end   = s.find_last_of('\"');
-			std::string string_data = s.substr(start, end - start);
-			std::cout << string_data << '\n';
-			// Assume the first character is your starting " of the string.
-			size = string_data.length() - std::count(string_data.begin(), string_data.end(), '\\');
+}
+if (type == type_str)
+{
+std::size_t start, end;
+start = s.find_first_of('\"') + 1;
+end   = s.find_last_of('\"');
+std::string string_data = s.substr(start, end - start);
+std::cout << string_data << '\n';
+// Assume the first character is your starting " of the string.
+size = string_data.length() - std::count(string_data.begin(), string_data.end(), '\\');
 
-			data = new int[size];
-			std::string::const_iterator it;
-			int index = 0;
-			for (it = string_data.begin(); it < string_data.end(); ++it, ++index)
-			{
-				if (*it == '\\')
-				{
-					data[index] = *(it + 1) == 't' ? static_cast<int>('\t') : static_cast<int>('\n');
-					++it;
-					continue;
-				}
-				data[index] = static_cast<int>(*it);
-				assert(index < size);
-			}
-		}
-	}
-	*/
+data = new int[size];
+std::string::const_iterator it;
+int index = 0;
+for (it = string_data.begin(); it < string_data.end(); ++it, ++index)
+{
+if (*it == '\\')
+{
+data[index] = *(it + 1) == 't' ? static_cast<int>('\t') : static_cast<int>('\n');
+++it;
+continue;
+}
+data[index] = static_cast<int>(*it);
+assert(index < size);
+}
+}
+}
+*/
 
 std::string remove_comments(const std::string& line)
 {
@@ -414,76 +393,76 @@ std::string remove_comments(const std::string& line)
 /*
 DataType get_type(const std::string& line)
 {
-	std::size_t begin, end;
-	begin = line.find(".");
-	end   = line.find(" ", begin) - begin;
+std::size_t begin, end;
+begin = line.find(".");
+end   = line.find(" ", begin) - begin;
 
-	assert(begin > 0 && end > 0);
-	assert(begin != std::string::npos && end != std::string::npos);
+assert(begin > 0 && end > 0);
+assert(begin != std::string::npos && end != std::string::npos);
 
-	std::string type =  line.substr(begin, end);
+std::string type =  line.substr(begin, end);
 
-    return type == ".word"   ? type_int
-	     : type == ".asciiz" ? type_str
-	     : type == ".byte"   ? type_char
-	     : type_none;
+return type == ".word"   ? type_int
+: type == ".asciiz" ? type_str
+: type == ".byte"   ? type_char
+: type_none;
 }
 
 void get_data(const std::string& line, Data& d)
 {
-	std::string::const_iterator it = line.begin();
-	std::string label;
-	DataType type;
-	std::string data;
+std::string::const_iterator it = line.begin();
+std::string label;
+DataType type;
+std::string data;
 
-	// Remove any whitespace.
-	while (it < line.end() && isspace(*it))
-		++it;
-	// Get the label of the data.
-	while (it < line.end() && *it != ':')
-		label.push_back(*it++);
-	// Find the beginning of the data type.
-	while (it < line.end() && *it != '.')
-		++it;
-	// Increment once to check the next character.
-	++it;
+// Remove any whitespace.
+while (it < line.end() && isspace(*it))
+++it;
+// Get the label of the data.
+while (it < line.end() && *it != ':')
+label.push_back(*it++);
+// Find the beginning of the data type.
+while (it < line.end() && *it != '.')
+++it;
+// Increment once to check the next character.
+++it;
 
-	assert(it != line.end());
+assert(it != line.end());
 
-	type = *it == 'w' ? type_int
-	     : *it == 'b' ? type_char
-	     : *it == 'a' ? type_str
-	     : type_none;
+type = *it == 'w' ? type_int
+: *it == 'b' ? type_char
+: *it == 'a' ? type_str
+: type_none;
 
-	// Find the next whitespace.
-	while (it < line.end() && !isspace(*it))
-		++it;
-	// Now that we have found the next whitespace, look for non white space.
-	while (it < line.end() && isspace(*it))
-		++it;
+// Find the next whitespace.
+while (it < line.end() && !isspace(*it))
+++it;
+// Now that we have found the next whitespace, look for non white space.
+while (it < line.end() && isspace(*it))
+++it;
 
-	// The remainder of the line is our data.
-	data = std::string(it, line.end());
+// The remainder of the line is our data.
+data = std::string(it, line.end());
 
-	d.set_label(label);
-	d.set_type(type);
-	d.set_data(data);
+d.set_label(label);
+d.set_type(type);
+d.set_data(data);
 }
 */
 
-void init_data(std::vector<Data>& mem_d, std::vector<Label>& labels)
+void init_data(std::vector<uint32_t>& mem, std::vector<Label>& labels)
 {
 	const std::string data_seg = ".data";
 	const std::string text_seg = ".text";
 	std::ifstream file;
 	std::string line;
-	file.open("toread/tictactoe.s");
+	file.open("tictactoe.s");
 	if (!file)
 	{
 		std::cout << "File could not be opened.\n";
 		return;
 	}
-	while (std::getline(file, line))	
+	while (std::getline(file, line))
 	{
 		line = remove_comments(line);
 		if (line.find(data_seg) != std::string::npos)
@@ -491,7 +470,7 @@ void init_data(std::vector<Data>& mem_d, std::vector<Label>& labels)
 			std::cout << "found data seg!\n";
 
 			while (std::getline(file, line))
-			{	
+			{
 				line = remove_comments(line);
 				// Make sure we don't run into the text segment.
 				if (line.find(text_seg) != std::string::npos)
@@ -507,15 +486,15 @@ void init_data(std::vector<Data>& mem_d, std::vector<Label>& labels)
 					continue;
 				}
 
-				labels.push_back(Label(line, data, mem_d.size()));
+				labels.push_back(Label(line, mem.size()));
 				if (line.find(".word") != std::string::npos)
-					word_to_mem(line, mem_d);
+					word_to_mem(line, mem);
 				else if (line.find(".byte") != std::string::npos)
-					byte_to_mem(line, mem_d);
+					byte_to_mem(line, mem);
 				else if (line.find(".asciiz") != std::string::npos)
-					asciiz_to_mem(line, mem_d);
+					asciiz_to_mem(line, mem);
 				else if (line.find(".ascii") != std::string::npos)
-					ascii_to_mem(line, mem_d);
+					ascii_to_mem(line, mem);
 			}
 		}
 	}
@@ -524,31 +503,12 @@ void init_data(std::vector<Data>& mem_d, std::vector<Label>& labels)
 
 int main()
 {
-	std::vector<Data> mem_d;
-	std::vector<int>  mem_i;
+	std::vector<uint32_t> mem;
 	std::vector<Label> labels;
 	Register reg[32];
-	init_data(mem_d, labels);
+	init_data(mem, labels);
 
-	for (auto it = labels.begin(); it != labels.end(); ++it)
-	{
-		std::cout << it->name << '\n';
-		int i = it->loc;
-		while (i < mem_d.size() && mem_d[i].type == ascii && static_cast<char>(mem_d[i].value) != '\0')
-		{
-			std::cout << static_cast<char>(mem_d[i].value);
-			++i;
-		}
-		if (mem_d[i].type == word)
-		{
-			std::cout << mem_d[i].value;
-		}
-		else if (mem_d[i].type == byte)
-		{
-			std::cout << static_cast<char>(mem_d[i].value);
-		}
-		std::cout << std::endl;
-	}
+	int z; std::cin >> z;
 
 	return 0;
 }
