@@ -3,13 +3,12 @@
 
 const int MAX_REG = 32;
 
-typedef uint32_t Register;
+typedef int Register;
 
-/*
-struct Register
-{
-    int value;
-    bool address; // True if the value is an index to mem.
-};*/
+const int Ir = 32;
+const int Pc = 33;
+const int v0 = 2;
+const int a0 = 4;
+const int a1 = 5;
 
 #endif

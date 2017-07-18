@@ -9,33 +9,33 @@
 typedef uint32_t Instruction;
 const int Null_instruction = 0;
 
-const Instruction Addi = 1 << 26;
-const Instruction Addiu = 2 << 26;
-const Instruction Andi = 3 << 26;
-const Instruction Beq = 4 << 26;
-const Instruction Bne = 5 << 26;
-const Instruction Lbu = 6 << 26;
-const Instruction Lhu = 7 << 26;
-const Instruction Lui = 8 << 26;
+const Instruction Li = 1 << 26;
+const Instruction La = 2 << 26;
+const Instruction Lb = 3 << 26;
+const Instruction Sb = 4 << 26;
+const Instruction Beq = 5 << 26;
+const Instruction Bne = 6 << 26;
+const Instruction Bnez = 7 << 26;
+const Instruction J = 8 << 26;
 const Instruction Lw = 9 << 26;
 const Instruction Ori = 10 << 26;
-const Instruction Sb = 11 << 26;
+const Instruction Lbu = 11 << 26;
 const Instruction Sh = 12 << 26;
 const Instruction Slti = 13 << 26;
 const Instruction Sltiu = 14 << 26;
 const Instruction Sw = 15 << 26;
-const Instruction J = 16 << 26;
+const Instruction Lui = 16 << 26;
 const Instruction Jal = 17 << 26;
-const Instruction Li = 18 << 26;
-const Instruction La = 19 << 26;
-const Instruction Lb = 20 << 26;
+const Instruction Addi = 18 << 26;
+const Instruction Addiu = 19 << 26;
+const Instruction Andi = 20 << 26;
 const Instruction Rem = 21 << 26;
-const Instruction Bnez = 22 << 26;
+const Instruction Lhu = 22 << 26;
 const Instruction Sys = 31 << 26;
 
-const Instruction Add = 1;
+const Instruction And = 1;
 const Instruction Addu = 2;
-const Instruction And = 3;
+const Instruction Add = 3;
 const Instruction Div = 4;
 const Instruction Divu = 5;
 const Instruction Jr = 6;
@@ -72,61 +72,105 @@ const std::map<std::string, Instruction> Map_str_to_type =
     { "move", Move }
 };
 
-void li(Register& rs, Register rt, int imm, std::vector<Instruction>& mem)
+void li(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
 {
-    rs = imm;
+    r[rs] = imm;
+    r[Pc] += 1;
 }
 
-void la(Register& rs, Register rt, int imm, std::vector<Instruction>& mem)
+void la(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
 {
-    rs = imm;
+    r[rs] = imm;
+    r[Pc] += 1;
 }
 
-void lb(Register& rs, Register rt, int imm, std::vector<Instruction>& mem)
+void lb(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
 {
-    rs = imm;
+    r[rs] = mem[imm];
+    r[Pc] += 1;
 }
 
-void sb(Register& rs, Register rt, int imm, std::vector<Instruction>& mem)
+void sb(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
 {
-    mem[rt + imm] = rs;
+    mem[r[rt] + imm] = r[rs];
+    r[Pc] += 1;
 }
 
-bool syscall(Register& v0, Register a0, Register a1, std::vector<Instruction>& mem)
+void beq(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
 {
-    if (v0 == 1)
+    if (r[rs] == r[rt])
+        r[Pc] = imm;
+    else
+        r[Pc] += 1;
+}
+
+void bne(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+{
+    if (r[rs] != r[rt])
+        r[Pc] = imm;
+    else
+        r[Pc] += 1;
+}
+
+void bnez(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+{
+    if (r[rs] != r[0])
+        r[Pc] = imm;
+    else
+        r[Pc] += 1;
+}
+
+void j(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+{
+    r[Pc] = imm;
+    r[Pc] += 1;
+}
+
+void _and(Register* r, int rs, int rt, int rd, std::vector<Instruction>& mem)
+{
+    r[rs] = r[rt] & r[rd];
+    r[Pc] += 1;
+}
+
+bool syscall(Register* r, std::vector<Instruction>& mem)
+{
+    if (r[v0] == 1)
     {
         // Print int.
-        assert(a0 < mem.size());
-        std::cout << mem[a0];
+        assert(r[a0] < mem.size());
+        std::cout << mem[r[a0]];
     }
-    else if (v0 == 4)
+    else if (r[v0] == 4)
     {
         // Print string.
-        assert(a0 < mem.size());
-        auto it = mem.begin() + a0;
-        while (it != mem.end() && *it != '\0')
+        assert(r[a0] < mem.size());
+        auto it = mem.begin() + r[a0];
+        while (it != mem.end() && static_cast<char>(*it) != '\0')
+        {
             std::cout << static_cast<char>(*it);
+            ++it;
+        }
     }
-    else if (v0 == 5)
+    else if (r[v0] == 5)
     {
-        std::cin >> v0;
+        std::cin >> r[v0];
     }
-    else if (v0 == 10)
+    else if (r[v0] == 10)
     {
         return true;
     }
-    else if (v0 == 11)
+    else if (r[v0] == 11)
     {
-        assert(a0 < mem.size());
-        std::cout << static_cast<char>(mem[a0]);
+        assert(r[a0] < mem.size());
+        std::cout << static_cast<char>(mem[r[a0]]);
     }
-    else if (v0 == 12)
+    else if (r[v0] == 12)
     {
         char c;
         std::cin >> c;
-        v0 = static_cast<int>(c);
+        r[v0] = static_cast<int>(c);
     }
+    r[Pc] += 1;
     return false;
 }
 

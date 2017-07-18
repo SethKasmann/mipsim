@@ -211,6 +211,60 @@ void init_data(std::vector<uint32_t>& mem, std::vector<Label>& labels)
     file.close();
 }
 
+// Returns true if the instruction is a pseudo instruction. This is found by
+// searching the instruction that contains an immediate value, followed by
+// a label.
+bool is_pseudo(std::string& line)
+{
+    auto it = line.begin();
+    // Iterate to the first comma.
+    while (it != line.end())
+    {
+        if (*it == ',')
+        {
+            ++it;
+            break;
+        }
+        ++it;
+    }
+    // Iterate to the next non space character.
+    while (it != line.end())
+    {
+        if (!isspace(*it))
+            break;
+        ++it;
+    }
+    // Return false if we don't find an immediate value.
+    if (it == line.end() || !isdigit(*it))
+        return false;
+    
+    // Iterate to the next comma.
+    while (it != line.end())
+    {
+        if (*it == ',')
+        {
+            ++it;
+            break;
+        }
+        ++it;
+    }
+
+    // Iterate to the next non space character.
+    while (it != line.end())
+    {
+        if (!isspace(*it))
+            break;
+        ++it;
+    }
+
+    // Return false if a label wasn't found.
+    if (it == line.end() || !isalpha(*it))
+        return false;
+
+    // Pseudo instrcution is found. Return true.
+    return true;
+}
+
 void init_text_labels(std::vector<uint32_t>& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
@@ -245,7 +299,10 @@ void init_text_labels(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                 if (it != line.end())
                     labels.push_back(Label(line, loc));
 
-                loc++;
+                if (is_pseudo(line))
+                    loc += 2;
+                else
+                    loc++;
             }
             break;
         }
@@ -270,6 +327,7 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
         {
             while (std::getline(file, line))
             {
+                std::cout << line << " " << mem.size() << '\n';
                 line = remove_comments(line);
                 // Make sure we don't run into the data segment.
                 if (line.find(Data_seg) != std::string::npos)
@@ -393,7 +451,45 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                         name.push_back(*it);
                         ++it;
                     }
-                    i |= std::stoi(name);
+                    // Handle Pseudo Instructions. Here, we have a immediate value,
+                    // followed by a label. We need to insert an instruction to store
+                    // the immiate value into the register $at (position 1).
+                    if (is_pseudo(line))
+                    {
+                        Instruction pi = Null_instruction;
+                        pi |= Li;
+                        pi |= set_rs(1);
+                        pi |= std::stoi(name);
+                        mem.push_back(i);
+
+                        while (it != line.end() && (isdigit(*it) || isspace(*it)))
+                            ++it;
+
+                        if (it == line.end() || !isalpha(*it))
+                            std::cout << "Error: Pseudo Instruction found, but no second label found.\n";
+
+                        name = "";
+                        while (it != line.end() && isalpha(*it))
+                        {
+                            name.push_back(*it);
+                            ++it;
+                        }
+
+                        for (auto lab = labels.begin(); lab != labels.end(); ++lab)
+                        {
+                            if (lab->name == name)
+                            {
+                                i |= lab->loc;
+                            }
+                        }
+                        i |= set_rt(1);
+                        mem.push_back(i);
+                        continue;
+                    }
+                    else
+                        i |= std::stoi(name);
+
+                    // Handle offsets.
                     if (offset)
                     {
                         name = "";  
@@ -422,10 +518,65 @@ int main()
 {
     std::vector<Instruction> mem;
     std::vector<Label> labels;
-    Register reg[32];
+    Register reg[34];
     init_data(mem, labels);
     init_text_labels(mem, labels);
     init_instructions(mem, labels);
+
+    void (*r_type[2])(Register* r, int rs, int rt, int rd, std::vector<Instruction>& mem);
+    void (*i_type[9])(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem);
+
+    r_type[1] = _and;
+    i_type[1] = li;
+    i_type[2] = la;
+    i_type[3] = lb;
+    i_type[4] = sb;
+    i_type[5] = beq;
+    i_type[6] = bne;
+    i_type[7] = bnez;
+    i_type[8] = j;
+
+    for (int i = 0; i < 34; ++i)
+    {
+        reg[i] = 0;
+    }
+
+    for (auto it = labels.begin(); it != labels.end(); ++it)
+    {
+        if (it->name == "main")
+            reg[Pc] = it->loc;
+    }
+
+    while (1)
+    {
+        reg[Ir] = mem[reg[Pc]];
+        std::cout << reg[Pc] << '\n';
+        assert(reg[Pc] < mem.size());
+        if (reg[Ir] == Null_instruction)
+        {
+            reg[Pc] += 1;
+            continue;
+        }
+        if (opcode(reg[Ir]))
+        {
+            if (opcode(reg[Ir]) == 31)
+            {
+                if (syscall(reg, mem))
+                    break;
+            }
+            else
+            {
+                assert(opcode(reg[Ir]) > 0 && opcode(reg[Ir]) < 9);
+                i_type[opcode(reg[Ir])](reg, rs(reg[Ir]), rt(reg[Ir]), imm(reg[Ir]), mem);
+            }
+        }
+        else
+        {
+            std::cout << reg[Ir] << '\n';
+            assert(funct(reg[Ir]) == 1);
+            r_type[funct(reg[Ir])](reg, rs(reg[Ir]), rt(reg[Ir]), rd(reg[Ir]), mem);
+        }
+    }
 
     return 0;
 }
