@@ -10,26 +10,15 @@
 #include "instruction.h"
 #include "misc.h"
 #include "register.h"
+#include "label.h"
+#include "memory.h"
+#include "decode.h"
 
 const std::string Data_seg = ".data";
 const std::string Text_seg = ".text";
 
-class Label
-{
-public:
-    Label(const std::string& line, std::size_t index)
-        : loc(index)
-    {
-        // Set label.
-        std::string::const_iterator it0, it1;
-        for (it0 = line.begin(); it0 < line.end(), isspace(*it0); ++it0);
-        for (it1 = it0; it1 < line.end(), *it1 != ':'; ++it1);
-        name = std::string(it0, it1);
-    }
-    int loc;
-    std::string name;
-private:
-};
+typedef void (*Rtype)(Registers&, int, int, int, Memory&);
+typedef void (*Itype)(Registers&, int, int, int, Memory&);
 
 int reg_to_int(std::string& s)
 {
@@ -103,7 +92,7 @@ int reg_to_int(std::string& s)
     return std::stoi(s);
 }
 
-void ascii_to_mem(const std::string& s, std::vector<uint32_t>& mem)
+void ascii_to_mem(const std::string& s, Memory& mem)
 {
     //auto it0, it1;
     auto it0 = std::find(s.begin(), s.end(), '"');
@@ -113,21 +102,21 @@ void ascii_to_mem(const std::string& s, std::vector<uint32_t>& mem)
         {
             for (++it0; it0 < it1; ++it0)
                 if (*it0 == '\\')
-                    mem.push_back(static_cast<int>(get_escape(*++it0)));
+                    mem.push<Byte>(get_escape(*++it0));
                 else
-                    mem.push_back(static_cast<int>(*it0));
+                    mem.push<Byte>(*it0);
             break;
         }
     }
 }
 
-void asciiz_to_mem(const std::string& s, std::vector<uint32_t>& mem)
+void asciiz_to_mem(const std::string& s, Memory& mem)
 {
     ascii_to_mem(s, mem);
-    mem.push_back(static_cast<int>('\0'));
+    mem.push<Byte>('\0');
 }
 
-void byte_to_mem(const std::string& s, std::vector<uint32_t>& mem)
+void byte_to_mem(const std::string& s, Memory& mem)
 {
     // Find the first apostrophe.
     auto it = std::find(s.begin(), s.end(), '\'');
@@ -137,9 +126,9 @@ void byte_to_mem(const std::string& s, std::vector<uint32_t>& mem)
         ++it;
         // Handle escape characters
         if (*it == '\\')
-            mem.push_back(static_cast<int>(get_escape(*++it)));
+            mem.push<Byte>(get_escape(*++it));
         else
-            mem.push_back(static_cast<int>(*it));
+            mem.push<Byte>(*it);
         it = std::find(it, s.end(), ',');
         // Return for a single character or at the end of the array.
         if (it == s.end())
@@ -149,7 +138,7 @@ void byte_to_mem(const std::string& s, std::vector<uint32_t>& mem)
     }
 }
 
-void word_to_mem(const std::string& s, std::vector<uint32_t>& mem)
+void word_to_mem(const std::string& s, Memory& mem)
 {
     // Don't rule out the possibility there is a number in the lable. First,
     // find the colon at the end of the label. Then iterate and search for 
@@ -161,15 +150,15 @@ void word_to_mem(const std::string& s, std::vector<uint32_t>& mem)
             word.push_back(*it);
         else if (word != "")
         {
-            mem.push_back(std::stoi(word));
+            mem.push<Word>(std::stoi(word));
             word = "";
         }
     }
     if (word != "")
-        mem.push_back(std::stoi(word));
+        mem.push<Word>(std::stoi(word));
 }
 
-void init_data(std::vector<uint32_t>& mem, std::vector<Label>& labels)
+void init_data(Memory& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
     std::string line;
@@ -265,7 +254,7 @@ bool is_pseudo(std::string& line)
     return true;
 }
 
-void init_text_labels(std::vector<uint32_t>& mem, std::vector<Label>& labels)
+void init_text_labels(Memory& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
     std::string line, name;
@@ -300,9 +289,9 @@ void init_text_labels(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                     labels.push_back(Label(line, loc));
 
                 if (is_pseudo(line))
-                    loc += 2;
+                    loc += 8;
                 else
-                    loc++;
+                    loc += 4;
             }
             break;
         }
@@ -310,7 +299,7 @@ void init_text_labels(std::vector<uint32_t>& mem, std::vector<Label>& labels)
     file.close();
 }
 
-void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
+void init_instructions(Memory& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
     std::string line, name;
@@ -327,7 +316,7 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
         {
             while (std::getline(file, line))
             {
-                std::cout << line << " " << mem.size() << '\n';
+                //std::cout << line << " " << mem.size() << '\n';
                 line = remove_comments(line);
                 // Make sure we don't run into the data segment.
                 if (line.find(Data_seg) != std::string::npos)
@@ -415,8 +404,14 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                     }
                     i |= set_rd(reg_to_int(name));
                     // Push back instruction and continue.
-                    mem.push_back(i);
+                    mem.push<Instruction>(i);
                     continue;
+                }
+                // 10. Convert any R-Type to I-Type if R-Type was used as a 
+                // pseudo instruction.
+                if ((i & 0x3f) == Add)
+                {
+                    i |= Add << 26;
                 }
 
                 // 10. Check for immediate value.
@@ -436,7 +431,7 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                             i |= lab->loc;
                         }
                     }
-                    mem.push_back(i);
+                    mem.push<Instruction>(i);
                 }
                 else if (it != line.end() && isdigit(*it))
                 {
@@ -460,7 +455,7 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                         pi |= Li;
                         pi |= set_rs(1);
                         pi |= std::stoi(name);
-                        mem.push_back(i);
+                        mem.push<Instruction>(pi);
 
                         while (it != line.end() && (isdigit(*it) || isspace(*it)))
                             ++it;
@@ -469,11 +464,13 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                             std::cout << "Error: Pseudo Instruction found, but no second label found.\n";
 
                         name = "";
-                        while (it != line.end() && isalpha(*it))
+                        while (it != line.end() && !isspace(*it))
                         {
                             name.push_back(*it);
                             ++it;
                         }
+
+                        std::cout << "looking for pseudo:" << name << '\n';
 
                         for (auto lab = labels.begin(); lab != labels.end(); ++lab)
                         {
@@ -483,11 +480,13 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                             }
                         }
                         i |= set_rt(1);
-                        mem.push_back(i);
+                        mem.push<Instruction>(i);
                         continue;
                     }
                     else
+                    {
                         i |= std::stoi(name);
+                    }
 
                     // Handle offsets.
                     if (offset)
@@ -501,11 +500,11 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
                         }
                         i |= set_rt(reg_to_int(name));
                     }
-                    mem.push_back(i);
+                    mem.push<Instruction>(i);
                 }
                 else
                 {
-                    mem.push_back(i);
+                    mem.push<Instruction>(i);
                 }
 
             }
@@ -516,65 +515,58 @@ void init_instructions(std::vector<uint32_t>& mem, std::vector<Label>& labels)
 
 int main()
 {
-    std::vector<Instruction> mem;
+    //Memtest mem;
+    //std::vector<uint8_t> memt;
+    Memory mem;
     std::vector<Label> labels;
-    Register reg[34];
     init_data(mem, labels);
     init_text_labels(mem, labels);
     init_instructions(mem, labels);
+    Registers regs(labels);
 
-    void (*r_type[2])(Register* r, int rs, int rt, int rd, std::vector<Instruction>& mem);
-    void (*i_type[9])(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem);
+    void (*r_type[4])(Registers& r, int rs, int rt, int rd, Memory& mem);
+    void (*i_type[11])(Registers& r, int rs, int rt, int imm, Memory& mem);
 
-    r_type[1] = _and;
-    i_type[1] = li;
+    r_type[1] = add;
+    r_type[2] = _and;
+    r_type[3] = move;
+
+    i_type[1] = addi;
     i_type[2] = la;
     i_type[3] = lb;
     i_type[4] = sb;
     i_type[5] = beq;
     i_type[6] = bne;
     i_type[7] = bnez;
-    i_type[8] = j;
-
-    for (int i = 0; i < 34; ++i)
-    {
-        reg[i] = 0;
-    }
-
-    for (auto it = labels.begin(); it != labels.end(); ++it)
-    {
-        if (it->name == "main")
-            reg[Pc] = it->loc;
-    }
+    i_type[8] = li;
+    i_type[9] = j;
+    i_type[10] = rem;
 
     while (1)
     {
-        reg[Ir] = mem[reg[Pc]];
-        std::cout << reg[Pc] << '\n';
-        assert(reg[Pc] < mem.size());
-        if (reg[Ir] == Null_instruction)
+        regs.set_ir(mem.fetch<Instruction>(regs.get_pc()));
+        //std::cout << "PC:" << reg[Pc] << '\n';
+        assert(regs.get_pc() < mem.size());
+        if (regs.get_ir() == Null_instruction)
         {
-            reg[Pc] += 1;
+            regs++;
             continue;
         }
-        if (opcode(reg[Ir]))
+        if (regs.opcode())
         {
-            if (opcode(reg[Ir]) == 31)
+            if (regs.opcode() == 31)
             {
-                if (syscall(reg, mem))
+                if (syscall(regs, mem))
                     break;
             }
             else
             {
-                assert(opcode(reg[Ir]) > 0 && opcode(reg[Ir]) < 9);
-                i_type[opcode(reg[Ir])](reg, rs(reg[Ir]), rt(reg[Ir]), imm(reg[Ir]), mem);
+                i_type[regs.opcode()](regs, regs.rs(), regs.rt(), regs.imm(), mem);
             }
         }
         else
         {
-            std::cout << reg[Ir] << '\n';
-            assert(funct(reg[Ir]) == 1);
-            r_type[funct(reg[Ir])](reg, rs(reg[Ir]), rt(reg[Ir]), rd(reg[Ir]), mem);
+            r_type[regs.funct()](regs, regs.rs(), regs.rt(), regs.rd(), mem);
         }
     }
 

@@ -3,58 +3,71 @@
 
 #include <string>
 #include <map>
+#include <cassert>
 #include "misc.h"
 #include "register.h"
+#include "memory.h"
 
 typedef uint32_t Instruction;
 const int Null_instruction = 0;
 
-const Instruction Li = 1 << 26;
+const Instruction J = 0x2;
+const Instruction Jal = 0x3;
+const Instruction Beq = 0x4;
+const Instruction Bne = 0x5;
+const Instruction Blez = 0x6;
+const Instruction Bgtz = 0x7;
+const Instruction Addi = 0x8;
+const Instruction Addiu = 0x9;
+const Instruction Slti = 0xa;
+const Instruction Sltiu = 0xb;
+const Instruction Andi = 0xc;
+const Instruction Ori = 0xd;
+const Instruction Xori = 0xe;
+const Instruction Lui = 0xf;
+const Instruction Lb = 0x20;
+const Instruction Lh = 0x21;
+const Instruction Lw = 0x22;
+const Instruction Lbu = 0x24;
+const Instruction Lhu = 0x25;
+const Instruction Sb = 0x28;
+const Instruction Sh = 0x29;
+const Instruction Sw = 0x2c;
+/*
 const Instruction La = 2 << 26;
-const Instruction Lb = 3 << 26;
-const Instruction Sb = 4 << 26;
-const Instruction Beq = 5 << 26;
-const Instruction Bne = 6 << 26;
 const Instruction Bnez = 7 << 26;
-const Instruction J = 8 << 26;
-const Instruction Lw = 9 << 26;
-const Instruction Ori = 10 << 26;
-const Instruction Lbu = 11 << 26;
-const Instruction Sh = 12 << 26;
-const Instruction Slti = 13 << 26;
-const Instruction Sltiu = 14 << 26;
-const Instruction Sw = 15 << 26;
-const Instruction Lui = 16 << 26;
-const Instruction Jal = 17 << 26;
-const Instruction Addi = 18 << 26;
-const Instruction Addiu = 19 << 26;
-const Instruction Andi = 20 << 26;
-const Instruction Rem = 21 << 26;
-const Instruction Lhu = 22 << 26;
+const Instruction Li = 8 << 26;
+const Instruction Rem = 10 << 26;
 const Instruction Sys = 31 << 26;
+*/
 
-const Instruction And = 1;
-const Instruction Addu = 2;
-const Instruction Add = 3;
-const Instruction Div = 4;
-const Instruction Divu = 5;
-const Instruction Jr = 6;
-const Instruction Mfc0 = 7;
-const Instruction Mfhi = 8;
-const Instruction Mflo = 9;
-const Instruction Mult = 10;
-const Instruction Multu = 11;
-const Instruction Nor = 12;
-const Instruction Or = 13;
-const Instruction Sll = 14;
-const Instruction Slt = 15;
-const Instruction Sltu = 16;
-const Instruction Sra = 17;
-const Instruction Srl = 18;
-const Instruction Sub = 19;
-const Instruction Subu = 20;
-const Instruction Xor = 21;
-const Instruction Move = 22;
+const Instruction Sll   = 0x0;
+const Instruction Srl   = 0x2;
+const Instruction Sra   = 0x3;
+const Instruction Sllv  = 0x4;
+const Instruction Srlv  = 0x6;
+const Instruction Srav  = 0x7;
+const Instruction Jr    = 0x8;
+const Instruction Jalr  = 0x9;
+const Instruction Sys   = 0xc;
+const Instruction Mfhi  = 0x10;
+const Instruction Mthi  = 0x11;
+const Instruction Mflo  = 0x12;
+const Instruction Mtlo  = 0x13;
+const Instruction Mult  = 0x19;
+const Instruction Multu = 0x1a;
+const Instruction Div   = 0x1b;
+const Instruction Divu  = 0x1c;
+const Instruction Add   = 0x20;
+const Instruction Addu  = 0x21;
+const Instruction Sub   = 0x22;
+const Instruction Subu  = 0x23;
+const Instruction And   = 0x24;
+const Instruction Or    = 0x25;
+const Instruction Xor   = 0x26;
+const Instruction Nor   = 0x27;
+const Instruction Slt   = 0x2a;
+const Instruction Sltu  = 0x2b;
 
 const std::map<std::string, Instruction> Map_str_to_type =
 {
@@ -72,83 +85,126 @@ const std::map<std::string, Instruction> Map_str_to_type =
     { "move", Move }
 };
 
-void li(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void addi(Registers& r, Decoder& d, Memory& mem)
 {
+    r[d.rt()] = r[d.rs()] + d.imm();
+}
+
+void li(Registers& r, int rs, int rt, int imm, Memory& mem)
+{
+    std::cout << "In LI" << '\n';
+    //std::cout << "rs:" << rs << " rt:" << rt << " imm:" << imm << '\n';
     r[rs] = imm;
-    r[Pc] += 1;
+    r++;
 }
 
-void la(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void la(Registers& r, int rs, int rt, int imm, Memory& mem)
 {
+    std::cout << "In LA" << '\n';
     r[rs] = imm;
-    r[Pc] += 1;
+    r++;
 }
 
-void lb(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void lb(Registers& r, int rs, int rt, int imm, Memory& mem)
 {
-    r[rs] = mem[imm];
-    r[Pc] += 1;
+    std::cout << "In LB" << '\n';    
+    r[rs] = static_cast<Register>(mem.fetch<Byte>(imm));
+    r++;
 }
 
-void sb(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void sb(Registers& r, int rs, int rt, int imm, Memory& mem)
 {
-    mem[r[rt] + imm] = r[rs];
-    r[Pc] += 1;
+    std::cout << "In SB" << '\n';
+    mem.store<Byte>(static_cast<Byte>(r[rs]), r[rt] + imm);
+    r++;
 }
 
-void beq(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void beq(Registers& r, int rs, int rt, int imm, Memory& mem)
 {
+    std::cout << "beq\n";
+    std::cout << r[rs] << " " << r[rt] << '\n';
     if (r[rs] == r[rt])
-        r[Pc] = imm;
+    {
+        std::cout << "in here...\n";
+        r = imm;
+    }
     else
-        r[Pc] += 1;
+        r++;
 }
 
-void bne(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void bne(Registers& r, int rs, int rt, int imm, Memory& mem)
 {
+    std::cout << "In BNE" << '\n';    
     if (r[rs] != r[rt])
-        r[Pc] = imm;
+        r = imm;
     else
-        r[Pc] += 1;
+        r++;
 }
 
-void bnez(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void bnez(Registers& r, int rs, int rt, int imm, Memory& mem)
 {
+    std::cout << "In BNEZ" << '\n';    
     if (r[rs] != r[0])
-        r[Pc] = imm;
+        r = imm;
     else
-        r[Pc] += 1;
+        r++;
 }
 
-void j(Register* r, int rs, int rt, int imm, std::vector<Instruction>& mem)
+void j(Registers& r, int rs, int rt, int imm, Memory& mem)
 {
-    r[Pc] = imm;
-    r[Pc] += 1;
+    std::cout << "In J" << '\n';    
+    r = imm;
+    //r++;
 }
 
-void _and(Register* r, int rs, int rt, int rd, std::vector<Instruction>& mem)
+void rem(Registers& r, int rs, int rt, int imm, Memory& mem)
+{
+    std::cout << "In REM" << '\n';    
+    assert(imm > 0);
+    r[rs] = r[rt] % imm;
+    r++;
+}
+
+void add(Registers& r, int rs, int rt, int rd, Memory& mem)
+{
+    r[rs] = r[rt] + r[rd];
+    r++;
+    }
+
+    void _and(Registers& r, int rs, int rt, int rd, Memory& mem)
 {
     r[rs] = r[rt] & r[rd];
-    r[Pc] += 1;
+    r++;
 }
 
-bool syscall(Register* r, std::vector<Instruction>& mem)
+void move(Registers& r, int rs, int rt, int rd, Memory& mem)
 {
+    std::cout << "In MOVE" << '\n';  
+    std::cout << r[rs] << " " << r[rt] << '\n';
+    r[rs] = r[rt];
+    std::cout << r[rs] << " " << r[rt] << '\n';
+    r++;
+}
+
+bool syscall(Registers& r, Memory& mem)
+{
+    std::cout << "In SYSCALL" << '\n';    
     if (r[v0] == 1)
     {
         // Print int.
         assert(r[a0] < mem.size());
-        std::cout << mem[r[a0]];
+        std::cout << mem.fetch<Word>(r[a0]);
     }
     else if (r[v0] == 4)
     {
         // Print string.
         assert(r[a0] < mem.size());
-        auto it = mem.begin() + r[a0];
-        while (it != mem.end() && static_cast<char>(*it) != '\0')
+        for (int i = r[a0]; i < mem.size(); ++i)
         {
-            std::cout << static_cast<char>(*it);
-            ++it;
+            Byte b = mem.fetch<Byte>(i);
+            if (b == '\0')
+                break;
+            std::cout << b;
         }
     }
     else if (r[v0] == 5)
@@ -162,23 +218,19 @@ bool syscall(Register* r, std::vector<Instruction>& mem)
     else if (r[v0] == 11)
     {
         assert(r[a0] < mem.size());
-        std::cout << static_cast<char>(mem[r[a0]]);
+        std::cout << mem.fetch<Byte>(r[a0]);
     }
     else if (r[v0] == 12)
     {
         char c;
         std::cin >> c;
-        r[v0] = static_cast<int>(c);
+        r[v0] = static_cast<Register>(c);
     }
-    r[Pc] += 1;
+    r++;
     return false;
 }
 
-bool j_type(Instruction i)
-{
-    return i == J || i == Jal || i == Jr;
-}
-
+/*
 bool i_type(Instruction i)
 {
     return i & 0xfc000000;
@@ -187,7 +239,7 @@ bool i_type(Instruction i)
 bool r_type(Instruction i)
 {
     return i & 0x3f;
-}
+}*/
 
 Instruction generate(const std::string& s)
 {
@@ -211,59 +263,17 @@ Instruction generate(const std::string& s)
     return 0;
 }
 
-int opcode(Instruction i)
-{
-    return (i & 0xfc000000) >> 26;
-}
-
-int rs(Instruction i)
-{
-    return (i & 0x3e00000) >> 21;
-}
-
 int set_rs(int i)
 {
     return i << 21;
 }
-
-int rt(Instruction i)
-{
-    return (i & 0x1f0000) >> 16;
-}
-
 int set_rt(int i)
 {
     return i << 16;
 }
-
-int rd(Instruction i)
-{
-    return (i & 0xf800) >> 11;
-}
-
 int set_rd(int i)
 {
     return i << 11;
-}
-
-int shift(Instruction i)
-{
-    return (i & 0x7c0) >> 6;
-}
-
-int funct(Instruction i)
-{
-    return i & 0x3f;
-}
-
-int imm(Instruction i)
-{
-    return i & 0xffff;
-}
-
-int jaddress(Instruction i)
-{
-    return i & 0x3ffffff;
 }
 
 #endif
