@@ -17,27 +17,20 @@ class Decoder
 public:
 	void decode(Instruction i)
 	{
-		opcode = param1 = param2 = param3 = 0;
+		fun_index = param1 = param2 = param3 = 0;
 		FunctionType t = get_type(i);
 
 		if (t == r_type)
-			decode<r_type>(i);
+			decode_r_type(i);
 		else if (t == i_type)
-			decode<i_type>(i);
+			decode_i_type(i);
 		else if (t == j_type)
-			decode<j_type>(i);
+			decode_j_type(i);
 	}
-	template<FunctionType> void decode(Instruction i);
+	void decode_r_type(Instruction i);
+	void decode_i_type(Instruction i);
+	void decode_j_type(Instruction i);
 	friend std::ostream& operator<<(std::ostream& o, const Decoder & d);
-private:
-	uint32_t opcode(Instruction i) const
-	{
-	    return (i & 0xfc000000) >> 26;
-	}
-	uint32_t rs(Instruction i) const
-	{
-	    return (i & 0x3e00000) >> 21;
-	}
 	uint32_t rs() const
 	{
 		return param1;
@@ -53,6 +46,15 @@ private:
 	uint32_t imm() const
 	{
 		return param3;
+	}
+private:
+	uint32_t opcode(Instruction i) const
+	{
+	    return (i & 0xfc000000) >> 26;
+	}
+	uint32_t rs(Instruction i) const
+	{
+	    return (i & 0x3e00000) >> 21;
 	}
 	uint32_t addaress() const
 	{
@@ -101,27 +103,25 @@ std::ostream& operator<<(std::ostream& o, const Decoder & d)
 {
 	o << "<Decoder"
 	  << ", fun_index:" << d.fun_index 
-	  << ", param1:"    << param1      
-	  << ", param2:"    << param2 
-	  << ", param3:"    << param3 
+	  << ", param1:"    << d.param1      
+	  << ", param2:"    << d.param2 
+	  << ", param3:"    << d.param3 
 	  << ">"            << std::endl;
 }
 
-template<>
-inline void Decoder::decode<r_type>(Instruction i)
+void Decoder::decode_r_type(Instruction i)
 {
 	fun_index = funct(i);
 	param1 = rd(i);
 	param2 = rt(i);
 	// Special case for shifts.
-	if (opcode <= 3)
+	if (fun_index <= 3)
 		param3 = shamt(i);
 	else
 		param3 = rs(i);
 }
 
-template<>
-inline void Decoder::decode<i_type>(Instruction i)
+void Decoder::decode_i_type(Instruction i)
 {
 	fun_index = opcode(i) | I_flag;
 	param1 = rs(i);
@@ -129,8 +129,7 @@ inline void Decoder::decode<i_type>(Instruction i)
 	param3 = imm(i);
 }
 
-template<>
-inline void Decoder::decode<j_type>(Instruction i)
+void Decoder::decode_j_type(Instruction i)
 {
 	fun_index = opcode(i);
 	param1 = address(i);

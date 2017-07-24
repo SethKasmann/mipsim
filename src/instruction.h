@@ -7,39 +7,35 @@
 #include "misc.h"
 #include "register.h"
 #include "memory.h"
+#include "decode.h"
 
 typedef uint32_t Instruction;
+typedef void (*Alu)(Registers& r, Decoder& d, Memory& mem);
 const int Null_instruction = 0;
 
-const Instruction J = 0x2;
-const Instruction Jal = 0x3;
-const Instruction Beq = 0x4;
-const Instruction Bne = 0x5;
-const Instruction Blez = 0x6;
-const Instruction Bgtz = 0x7;
-const Instruction Addi = 0x8;
+const Instruction Bltz  = 0x1;
+const Instruction J     = 0x2;
+const Instruction Jal   = 0x3;
+const Instruction Beq   = 0x4;
+const Instruction Bne   = 0x5;
+const Instruction Blez  = 0x6;
+const Instruction Bgtz  = 0x7;
+const Instruction Addi  = 0x8;
 const Instruction Addiu = 0x9;
-const Instruction Slti = 0xa;
+const Instruction Slti  = 0xa;
 const Instruction Sltiu = 0xb;
-const Instruction Andi = 0xc;
-const Instruction Ori = 0xd;
-const Instruction Xori = 0xe;
-const Instruction Lui = 0xf;
-const Instruction Lb = 0x20;
-const Instruction Lh = 0x21;
-const Instruction Lw = 0x22;
-const Instruction Lbu = 0x24;
-const Instruction Lhu = 0x25;
-const Instruction Sb = 0x28;
-const Instruction Sh = 0x29;
-const Instruction Sw = 0x2c;
-/*
-const Instruction La = 2 << 26;
-const Instruction Bnez = 7 << 26;
-const Instruction Li = 8 << 26;
-const Instruction Rem = 10 << 26;
-const Instruction Sys = 31 << 26;
-*/
+const Instruction Andi  = 0xc;
+const Instruction Ori   = 0xd;
+const Instruction Xori  = 0xe;
+const Instruction Lui   = 0xf;
+const Instruction Lb    = 0x20;
+const Instruction Lh    = 0x21;
+const Instruction Lw    = 0x22;
+const Instruction Lbu   = 0x24;
+const Instruction Lhu   = 0x25;
+const Instruction Sb    = 0x28;
+const Instruction Sh    = 0x29;
+const Instruction Sw    = 0x2c;
 
 const Instruction Sll   = 0x0;
 const Instruction Srl   = 0x2;
@@ -71,124 +67,91 @@ const Instruction Sltu  = 0x2b;
 
 const std::map<std::string, Instruction> Map_str_to_type =
 {
-    { "addi", Addi }, { "addiu", Addiu }, { "andi", Andi }, { "beq",   Beq   },
-    { "bne",  Bne  }, { "lbu",   Lbu   }, { "lhu",  Lhu  }, { "lui",   Lui   },
-    { "lw",   Lw   }, { "ori",   Ori   }, { "sb",   Sb   }, { "sh",    Sh    },
-    { "slti", Slti }, { "sltiu", Sltiu }, { "sw",   Sw   }, { "j",     J     },
-    { "jal",  Jal  }, { "add",   Add   }, { "addu", Addu }, { "and",   And   },
-    { "div",  Div  }, { "divu",  Divu  }, { "jr",   Jr   }, { "mfc0",  Mfc0  },
-    { "mfhi", Mfhi }, { "mflo",  Mflo  }, { "mult", Mult }, { "multu", Multu },
-    { "nor",  Nor  }, { "or",    Or    }, { "sll",  Sll  }, { "slt",   Slt   },
-    { "sltu", Sltu }, { "sra",   Sra   }, { "srl",  Srl  }, { "sub",   Sub   },
-    { "subu", Subu }, { "xor",   Xor   }, { "li" ,  Li   }, { "la" ,   La    },
-    { "lb"  , Lb   }, { "rem",   Rem   }, { "syscall", Sys }, {"bnez", Bnez  },
-    { "move", Move }
+    { "bltz", Bltz }, { "j",     J     }, { "jal",  Jal  }, { "beq",  Beq  },
+    { "bne",  Bne  }, { "blez",  Blez  }, { "bgtz", Bgtz }, { "addi", Addi },
+    { "ori",  Ori  }, { "xori",  Xori  }, { "lui",  Lui  }, { "lb",   Lb   },
+    { "lh",   Lh   }, { "lw",    Lw    }, { "lbu",  Lbu  }, { "lhu",  Lhu  },
+    { "sb",   Sb   }, { "sh",    Sh    }, { "sw",   Sw   }, { "sll",  Sll  },
+    { "srl",  Srl  }, { "sra",   Sra   }, { "sllv", Sllv }, { "srlv", Srlv },
+    { "srav", Srav }, { "jr",    Jr    }, { "jalr", Jalr }, { "sys",  Sys  },
+    { "mfhi", Mfhi }, { "mthi",  Mthi  }, { "mflo", Mflo }, { "mtlo", Mtlo },
+    { "mult", Mult }, { "multu", Multu }, { "div",  Div  }, { "divu", Divu },
+    { "add",  Add  }, { "addu",  Addu  }, { "sub",  Sub  }, { "subu", Subu },
+    { "and",  And  }, { "or",    Or    }, { "xor",  Xor  }, { "nor",  Nor  },
+    { "slt" , Slt  }, { "sltu",  Sltu  }
 };
 
-void addi(Registers& r, Decoder& d, Memory& mem)
+void _null(Registers& r, Decoder& d, Memory& mem)
+{
+    return;
+}
+
+void _bltz(Registers& r, Decoder& d, Memory& mem)
+{
+    if (r[d.rs()] == r[d.rt()])
+        r = d.imm();
+}
+
+void _beq(Registers& r, Decoder& d, Memory& mem)
+{
+    if (r[d.rs()] == r[d.rt()])
+        r = d.imm();
+}
+
+void _bne(Registers& r, Decoder& d, Memory& mem)
+{  
+    if (r[d.rs()] != r[d.rt()])
+        r = d.imm();
+}
+
+void _addi(Registers& r, Decoder& d, Memory& mem)
 {
     r[d.rt()] = r[d.rs()] + d.imm();
 }
 
-void li(Registers& r, int rs, int rt, int imm, Memory& mem)
+void _ori(Registers& r, Decoder& d, Memory& mem)
 {
-    std::cout << "In LI" << '\n';
-    //std::cout << "rs:" << rs << " rt:" << rt << " imm:" << imm << '\n';
-    r[rs] = imm;
-    r++;
+    r[d.rt()] = r[d.rs()] | d.imm();
 }
 
-void la(Registers& r, int rs, int rt, int imm, Memory& mem)
+void _lui(Registers& r, Decoder& d, Memory& mem)
 {
-    std::cout << "In LA" << '\n';
-    r[rs] = imm;
-    r++;
+    r[d.rt()] = d.imm() << 16;
 }
 
-void lb(Registers& r, int rs, int rt, int imm, Memory& mem)
+void _lb(Registers& r, Decoder& d, Memory& mem)
 {
-    std::cout << "In LB" << '\n';    
-    r[rs] = static_cast<Register>(mem.fetch<Byte>(imm));
-    r++;
+    r[d.rs()] = static_cast<Register>(mem.fetch<Byte>(d.imm()));
 }
 
-void sb(Registers& r, int rs, int rt, int imm, Memory& mem)
+void _sb(Registers& r, Decoder& d, Memory& mem)
 {
-    std::cout << "In SB" << '\n';
-    mem.store<Byte>(static_cast<Byte>(r[rs]), r[rt] + imm);
-    r++;
+    mem.store<Byte>(static_cast<Byte>(r[d.rs()]), r[d.rt()] + d.imm());
 }
 
-void beq(Registers& r, int rs, int rt, int imm, Memory& mem)
-{
-    std::cout << "beq\n";
-    std::cout << r[rs] << " " << r[rt] << '\n';
-    if (r[rs] == r[rt])
-    {
-        std::cout << "in here...\n";
-        r = imm;
-    }
-    else
-        r++;
+void _j(Registers& r, Decoder& d, Memory& mem)
+{   
+    r = d.imm();
 }
 
-void bne(Registers& r, int rs, int rt, int imm, Memory& mem)
+void _add(Registers& r, Decoder& d, Memory& mem)
 {
-    std::cout << "In BNE" << '\n';    
-    if (r[rs] != r[rt])
-        r = imm;
-    else
-        r++;
+    r[d.rd()] = r[d.rs()] + r[d.rt()];
 }
 
-void bnez(Registers& r, int rs, int rt, int imm, Memory& mem)
+void _and(Registers& r, Decoder& d, Memory& mem)
 {
-    std::cout << "In BNEZ" << '\n';    
-    if (r[rs] != r[0])
-        r = imm;
-    else
-        r++;
+    r[d.rd()] = r[d.rs()] & r[d.rt()];
 }
 
-void j(Registers& r, int rs, int rt, int imm, Memory& mem)
+void _div(Registers& r, Decoder& d, Memory& mem)
 {
-    std::cout << "In J" << '\n';    
-    r = imm;
-    //r++;
+    r[lo] = r[d.rs()] / r[d.rt()];
+    r[hi] = r[d.rs()] % r[d.rt()];
 }
 
-void rem(Registers& r, int rs, int rt, int imm, Memory& mem)
+bool _syscall(Registers& r, Memory& mem)
 {
-    std::cout << "In REM" << '\n';    
-    assert(imm > 0);
-    r[rs] = r[rt] % imm;
-    r++;
-}
-
-void add(Registers& r, int rs, int rt, int rd, Memory& mem)
-{
-    r[rs] = r[rt] + r[rd];
-    r++;
-    }
-
-    void _and(Registers& r, int rs, int rt, int rd, Memory& mem)
-{
-    r[rs] = r[rt] & r[rd];
-    r++;
-}
-
-void move(Registers& r, int rs, int rt, int rd, Memory& mem)
-{
-    std::cout << "In MOVE" << '\n';  
-    std::cout << r[rs] << " " << r[rt] << '\n';
-    r[rs] = r[rt];
-    std::cout << r[rs] << " " << r[rt] << '\n';
-    r++;
-}
-
-bool syscall(Registers& r, Memory& mem)
-{
-    std::cout << "In SYSCALL" << '\n';    
     if (r[v0] == 1)
     {
         // Print int.
@@ -226,20 +189,28 @@ bool syscall(Registers& r, Memory& mem)
         std::cin >> c;
         r[v0] = static_cast<Register>(c);
     }
-    r++;
     return false;
 }
 
-/*
-bool i_type(Instruction i)
+void _mfhi(Registers& r, Decoder& d, Memory& mem)
 {
-    return i & 0xfc000000;
+    r[d.rd()] = r[hi];
 }
 
-bool r_type(Instruction i)
+void _mthi(Registers& r, Decoder& d, Memory& mem)
 {
-    return i & 0x3f;
-}*/
+    r[hi] = r[d.rs()];
+}
+
+void _mflo(Registers& r, Decoder& d, Memory& mem)
+{
+    r[d.rd()] = r[lo];
+}
+
+void _mtlo(Registers& r, Decoder& d, Memory& mem)
+{
+    r[lo] = r[d.rs()];
+}
 
 Instruction generate(const std::string& s)
 {

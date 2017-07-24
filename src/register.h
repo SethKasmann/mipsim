@@ -17,17 +17,18 @@ enum RegisterName
     s0,   s1,   s2,   s3,
     s4,   s5,   s6,   s7,
     t8,   t9,   k0,   k1,
-    gp,   sp,   fp,   ra
+    gp,   sp,   fp,   ra, 
+    pc,   lo,   hi
 };
 
 class Registers
 {
 public:
-    Registers() : pc(0), ir(0)
+    Registers() : _pc(0), _ir(0), _lo(0), _hi(0)
     {
         for (int i = 0; i < MAX_REG; ++i)
         {
-            r[i] = 0;
+            _r[i] = 0;
         }
     }
     Registers(std::vector<Label>& labels) : Registers()
@@ -36,7 +37,7 @@ public:
         {
             if (it->name == "main")
             {
-                pc = it->loc;
+                _pc = it->loc;
                 break;
             }
         }
@@ -56,10 +57,17 @@ public:
     int fetch(int reg) const;
     void write_back(int reg, int val);
 private:
-    int r[MAX_REG];
-    int pc;
-    uint32_t ir;
+    int _r[MAX_REG];
+    int _pc;
+    int _lo;
+    int _hi;
+    uint32_t _ir;
 };
+
+bool operator==(int i, RegisterName rn)
+{
+    return static_cast<RegisterName>(i) == rn;
+}
 
 /*
 int shift(Instruction i)
