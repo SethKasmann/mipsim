@@ -19,14 +19,11 @@ char get_escape(char c)
     return c == 'n' ? '\n' : '\t';
 }
 
-std::string remove_comments(const std::string& line)
+void remove_comments(std::string& line)
 {
-    std::string::const_iterator it;
-    it = find(line.begin(), line.end(), '#');
+    auto it = find(line.begin(), line.end(), '#');
     if (it != line.end())
-        return std::string(line.begin(), it);
-    else
-        return line;
+        line.erase(it, line.end());
 }
 
 bool is_whitespace(const std::string& line)

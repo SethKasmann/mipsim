@@ -168,7 +168,7 @@ void init_data(Memory& mem, std::vector<Label>& labels)
     }
     while (std::getline(file, line))
     {
-        line = remove_comments(line);
+        remove_comments(line);
         if (line.find(Data_seg) != std::string::npos)
         {
 
@@ -260,13 +260,13 @@ void init_text_labels(Memory& mem, std::vector<Label>& labels)
     }
     while (std::getline(file, line))
     {
-        line = remove_comments(line);
+        remove_comments(line);
         if (line.find(Text_seg) != std::string::npos)
         {
             loc = mem.size();
             while (std::getline(file, line))
             {
-                line = remove_comments(line);
+                remove_comments(line);
                 // Make sure we don't run into the data segment.
                 if (line.find(Data_seg) != std::string::npos)
                     break;
@@ -277,9 +277,9 @@ void init_text_labels(Memory& mem, std::vector<Label>& labels)
                     continue;
 
                 // Look for a text label.
-                auto it = std::find(line.begin(), line.end(), ':');
-                if (it != line.end())
+                if (contains_label(line))
                     labels.push_back(Label(line, loc));
+
 
                 if (is_pseudo(line))
                     loc += 8;
@@ -304,13 +304,13 @@ void init_instructions(Memory& mem, std::vector<Label>& labels)
     }
     while (std::getline(file, line))
     {
-        line = remove_comments(line);
+        remove_comments(line);
         if (line.find(Text_seg) != std::string::npos)
         {
             while (std::getline(file, line))
             {
                 //std::cout << line << " " << mem.size() << '\n';
-                line = remove_comments(line);
+                remove_comments(line);
                 // Make sure we don't run into the data segment.
                 if (line.find(Data_seg) != std::string::npos)
                     break;
