@@ -148,6 +148,8 @@ void word_to_mem(const std::string& s, Memory& mem)
         mem.push<Word>(std::stoi(word));
 }
 
+
+// Check if a line contains a label.
 bool contains_label(const std::string& line)
 {
 	auto it = std::find(line.begin(), line.end(), ':');
@@ -196,8 +198,12 @@ void init_data(Memory& mem, std::vector<Label>& labels)
     file.close();
 }
 
+// Finds the opcode characters in line and appends them to op. If no opcode is found
+// (such as a line with only a label), op is left as the empty string.
 void get_op(std::string::const_iterator& it, const std::string& line, std::string& op)
 {
+    op = "";
+
 	if (contains_label(line))
 		it = std::find(line.begin(), line.end(), ':');
 
@@ -215,10 +221,30 @@ void get_op(std::string::const_iterator& it, const std::string& line, std::strin
 	return op;
 }
 
-
+// Check if a line contains a pseudo instruction. Pseudo instructions are
+// instructions not native to mips. Pseudo instructions are converted
+// into one or more native instructions. Return 0 if the line does not
+// contain a pseudo instruction. Otherwise, return the number of native
+// instructions needed to represent the pseudo instruction.
 size_t pseudo_instruction(std::string& line)
 {
+    std::string op;
+    std::string::const_iterator it = line.begin();
 
+    // Find the opcode.
+    get_op(it, line, op);
+
+    // Return 0 if no opcode was found.
+    if (op.empty())
+        return 0;
+
+    if (op == "mov" || op == "li")
+        return 1;
+    else if (op == "la " || op == "bge" || op == "bgt"
+          || op == "ble" || op == "blt" || op == "ble")
+        return 2;
+    else
+        return 0;
 }
 
 void init_text_labels(Memory& mem, std::vector<Label>& labels)
