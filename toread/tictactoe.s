@@ -34,11 +34,18 @@ PrintBoard:
 			la $a0, board
 			syscall
 
-			beq $s5, 9, Tie
+			#########
+			li $k0, 9
+			beq $s5, $k0, Tie
+			#beq $s5, 9, Tie
 
 			add $s5, $s5, 1
 
-			rem $t0, $s0, 2
+			###########
+			li  $k0, 2
+			div $s0, $k0
+			move $t0, $hi
+			#rem $t0, $s0, 2
 			add $s0, $s0, 1
 			bnez $t0, Player0
 
@@ -61,15 +68,24 @@ Play:
 			syscall
 			move $s6, $v0
 
-			beq $s6, 11, J11
-			beq $s6, 21, J21
-			beq $s6, 31, J31
-			beq $s6, 12, J12
-			beq $s6, 22, J22
-			beq $s6, 32, J32
-			beq $s6, 13, J13
-			beq $s6, 23, J23
-			beq $s6, 33, J33
+			li $k0, 11
+			beq $s6, $k0, J11
+			li $k0, 21
+			beq $s6, $k0, J21
+			li $k0, 31
+			beq $s6, $k0, J31
+			li $k0, 12
+			beq $s6, $k0, J12
+			li $k0, 22
+			beq $s6, $k0, J22
+			li $k0, 32
+			beq $s6, $k0, J32
+			li $k0, 13
+			beq $s6, $k0, J13
+			li $k0, 23
+			beq $s6, $k0, J23
+			li $k0, 33
+			beq $s6, $k0, J33
 
 			li $v0, 4
 			la $a0, invalidMove
@@ -264,7 +280,10 @@ MenuNewGame:
 
 			li $v0,5
 			syscall
-			bne $v0, 99, main
+			######
+			li $k0, 99
+			bne $v0, $k0, main
+			#bne $v0, 99, main
 
 			li $v0, 10
 			syscall

@@ -17,7 +17,20 @@
 
 int main()
 {
+	Alu alu[128] = { _null };
+	alu[12] = _syscall;
+	alu[27] = _div;
+	alu[32] = _add;
+	alu[36] = _and;
+	alu[65] = _bltz;
+	alu[66] = _j;
+	alu[68] = _beq;
+	alu[69] = _bne;
+	alu[72] = _addi;
+	alu[96] = _lb;
+	alu[104] = _sb;
     Memory mem;
+    Decoder d;
     std::vector<Label> labels;
     init_data(mem, labels);
     init_text_labels(mem, labels);

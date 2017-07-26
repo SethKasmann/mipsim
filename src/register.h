@@ -64,7 +64,7 @@ private:
     uint32_t _ir;
 };
 
-bool operator==(int i, RegisterName rn)
+inline bool operator==(int i, RegisterName rn)
 {
     return static_cast<RegisterName>(i) == rn;
 }

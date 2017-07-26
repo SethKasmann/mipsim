@@ -13,29 +13,29 @@ typedef uint32_t Instruction;
 typedef void (*Alu)(Registers& r, Decoder& d, Memory& mem);
 const int Null_instruction = 0;
 
-const Instruction Bltz  = 0x1;
-const Instruction J     = 0x2;
-const Instruction Jal   = 0x3;
-const Instruction Beq   = 0x4;
-const Instruction Bne   = 0x5;
-const Instruction Blez  = 0x6;
-const Instruction Bgtz  = 0x7;
-const Instruction Addi  = 0x8;
-const Instruction Addiu = 0x9;
-const Instruction Slti  = 0xa;
-const Instruction Sltiu = 0xb;
-const Instruction Andi  = 0xc;
-const Instruction Ori   = 0xd;
-const Instruction Xori  = 0xe;
-const Instruction Lui   = 0xf;
-const Instruction Lb    = 0x20;
-const Instruction Lh    = 0x21;
-const Instruction Lw    = 0x22;
-const Instruction Lbu   = 0x24;
-const Instruction Lhu   = 0x25;
-const Instruction Sb    = 0x28;
-const Instruction Sh    = 0x29;
-const Instruction Sw    = 0x2c;
+const Instruction Bltz  = 0x1  << 26;
+const Instruction J     = 0x2  << 26;
+const Instruction Jal   = 0x3  << 26;
+const Instruction Beq   = 0x4  << 26;
+const Instruction Bne   = 0x5  << 26;
+const Instruction Blez  = 0x6  << 26;
+const Instruction Bgtz  = 0x7  << 26;
+const Instruction Addi  = 0x8  << 26;
+const Instruction Addiu = 0x9  << 26;
+const Instruction Slti  = 0xa  << 26;
+const Instruction Sltiu = 0xb  << 26;
+const Instruction Andi  = 0xc  << 26;
+const Instruction Ori   = 0xd  << 26;
+const Instruction Xori  = 0xe  << 26;
+const Instruction Lui   = 0xf  << 26;
+const Instruction Lb    = 0x20 << 26;
+const Instruction Lh    = 0x21 << 26;
+const Instruction Lw    = 0x22 << 26;
+const Instruction Lbu   = 0x24 << 26;
+const Instruction Lhu   = 0x25 << 26;
+const Instruction Sb    = 0x28 << 26;
+const Instruction Sh    = 0x29 << 26;
+const Instruction Sw    = 0x2c << 26;
 
 const Instruction Sll   = 0x0;
 const Instruction Srl   = 0x2;
@@ -78,7 +78,10 @@ const std::map<std::string, Instruction> Map_str_to_type =
     { "mult", Mult }, { "multu", Multu }, { "div",  Div  }, { "divu", Divu },
     { "add",  Add  }, { "addu",  Addu  }, { "sub",  Sub  }, { "subu", Subu },
     { "and",  And  }, { "or",    Or    }, { "xor",  Xor  }, { "nor",  Nor  },
-    { "slt" , Slt  }, { "sltu",  Sltu  }
+    { "slt" , Slt  }, { "sltu",  Sltu  },
+    { "li"  , Addi }, { "move" ,  Add  }, { "bnez", Bne  }, {"beqz",  Beq  },
+    { "la"  , Addi },
+    { "syscall" , Sys }
 };
 
 void _null(Registers& r, Decoder& d, Memory& mem)
@@ -150,7 +153,7 @@ void _div(Registers& r, Decoder& d, Memory& mem)
     r[hi] = r[d.rs()] % r[d.rt()];
 }
 
-bool _syscall(Registers& r, Memory& mem)
+void _syscall(Registers& r, Decoder& d, Memory& mem)
 {
     if (r[v0] == 1)
     {
@@ -176,7 +179,7 @@ bool _syscall(Registers& r, Memory& mem)
     }
     else if (r[v0] == 10)
     {
-        return true;
+        r[pc] = -1;
     }
     else if (r[v0] == 11)
     {
@@ -189,7 +192,6 @@ bool _syscall(Registers& r, Memory& mem)
         std::cin >> c;
         r[v0] = static_cast<Register>(c);
     }
-    return false;
 }
 
 void _mfhi(Registers& r, Decoder& d, Memory& mem)

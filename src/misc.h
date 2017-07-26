@@ -3,6 +3,13 @@
 
 #include <string>
 
+template<class It, class X>
+void safe_increment(It& it, const X& x, int n)
+{
+    if (std::distance(it, x.end()) >= n)
+        std::advance(it, n);
+}
+
 void lowercase(std::string& s)
 {
     for (auto it = s.begin(); it != s.end(); ++it)
@@ -21,9 +28,12 @@ char get_escape(char c)
 
 void remove_comments(std::string& line)
 {
+    line = std::string(line.begin(), std::find(line.begin(), line.end(), '#'));
+    /*
     auto it = find(line.begin(), line.end(), '#');
     if (it != line.end())
         line.erase(it, line.end());
+        */
 }
 
 bool is_whitespace(const std::string& line)

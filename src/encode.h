@@ -3,14 +3,16 @@
 
 #include <string>
 #include <fstream>
+#include <unordered_map>
 #include "memory.h"
 #include "label.h"
 #include "misc.h"
 
 const std::string Data_seg = ".data";
 const std::string Text_seg = ".text";
+const std::string Whitespace = " \t\n";
 
-int reg_to_int(std::string& s)
+int reg_to_int(const std::string& s)
 {
     if (s == "zero")
         return 0;
@@ -76,10 +78,143 @@ int reg_to_int(std::string& s)
         return 30;
     else if (s == "ra")
         return 31;
+    else if (s == "lo")
+        return lo;
+    else if (s == "hi")
+        return hi;
     // Handle register number;
     else
         assert(std::stoi(s) >= 0 && std::stoi(s) <= 31);
     return std::stoi(s);
+}
+
+void set_opcode(Instruction& i, const std::string& op)
+{
+    assert(op != "");
+    i |= Map_str_to_type.at(op);
+}
+
+void set_shift(Instruction& i, const std::string& num)
+{
+    assert(std::stoi(num) > 0);
+    i |= (std::stoi(num) & 0x1f) << 6;
+}
+
+void set_imm(Instruction& i, const std::string& num)
+{
+    i |= static_cast<Instruction>(std::stoi(num) & 0xffff);
+}
+
+void set_rs(Instruction& i, const std::string& reg)
+{
+    //std::cout << "\t\trs " << reg_to_int(reg) << '\n';
+    i |= reg_to_int(reg) << 16;
+}
+
+void set_rt(Instruction& i, const std::string& reg)
+{
+    //std::cout << "\t\trt " << reg_to_int(reg) << '\n';
+    i |= reg_to_int(reg) << 11;
+}
+
+void set_rd(Instruction& i, const std::string& reg)
+{
+    //std::cout << "\t\trd " << reg_to_int(reg) << '\n';
+    i |= reg_to_int(reg) << 6;
+}
+
+void set_reg(Instruction& i, const std::string& reg)
+{
+    static const int rd = 0x1f << 6;
+    static const int rt = 0x1f << 11;
+    static const int rs = 0x1f << 16;
+    // R Type
+    if (i & 0x31)
+    {
+        if (i & rt)
+        {
+            set_rs(i, reg);
+        }
+        else if (i & rd)
+            set_rt(i, reg);
+        else
+            set_rd(i, reg);
+    }
+    // I Type
+    else
+    {
+        if (i & rt)
+            set_rs(i, reg);
+        else
+            set_rt(i, reg);
+    }
+}
+
+void set_label(Instruction& i, const std::string& lab, std::vector<Label>& labels)
+{
+    for (auto it = labels.begin(); it != labels.end(); ++it)
+    {
+        if (it->name == lab)
+        {
+            //std::cout << "\tlab " << it->name << '\n';
+            i |= it->loc;
+            return;
+        }
+    }
+    std::cout << "Error: label \"" << lab << "\" not found in labels vector\n";
+}
+
+void set_token(Instruction& i, std::string::const_iterator& it, const std::string& line, std::vector<Label>& labels)
+{
+    // Immediate value.
+    if (*it == '-' || isdigit(*it))
+    {
+        std::string num = "";
+        while (it != line.end() && !isspace(*it) && *it != ',' && *it != '(')
+        {
+            num.push_back(*it);
+            ++it;
+        }
+        // For an R-Type instructions an immediate value can only be a
+        // 5 bit shift. For all others, set as an immediate value.
+        //std::cout << "\tPushing imm: " << num << '\n';
+        if (i & 0x31)
+            set_shift(i, num);
+        else
+            set_imm(i, num);
+    }
+    // Register
+    else if (*it == '$')
+    {
+        std::string reg = "";
+        ++it;
+        while (it != line.end() && !isspace(*it) && *it != ',' && *it != ')')
+        {
+            reg.push_back(*it);
+            ++it;
+        }
+        //std::cout << "\tPushing reg: " << reg << '\n';
+        set_reg(i, reg);
+    }
+    // Label
+    else
+    {
+        std::string lab = "";
+        while (it != line.end() && !isspace(*it))
+        {
+            lab.push_back(*it);
+            ++it;
+        }
+        //std::cout << "\tPushing lab: " << lab << '\n';
+        set_label(i, lab, labels);
+    }
+}
+
+bool next_token(std::string::const_iterator& it, std::string& line)
+{
+    while (it != line.end() && (isspace(*it) || *it == ',' || *it == ')' || *it == '('))
+        ++it;
+    return it != line.end();
 }
 
 void ascii_to_mem(const std::string& s, Memory& mem)
@@ -174,7 +309,7 @@ void init_data(Memory& mem, std::vector<Label>& labels)
 
             while (std::getline(file, line))
             {
-                line = remove_comments(line);
+                remove_comments(line);
                 // Make sure we don't run into the text segment.
                 if (line.find(Text_seg) != std::string::npos)
                     break;
@@ -198,27 +333,30 @@ void init_data(Memory& mem, std::vector<Label>& labels)
     file.close();
 }
 
-// Finds the opcode characters in line and appends them to op. If no opcode is found
-// (such as a line with only a label), op is left as the empty string.
-void get_op(std::string::const_iterator& it, const std::string& line, std::string& op)
+// Returns the opcode as a string. If no opcode is found, return the empty
+// string.
+std::string get_op(std::string::const_iterator& it, const std::string& line)
 {
-    op = "";
+    std::string::const_iterator start;
 
-	if (contains_label(line))
-		it = std::find(line.begin(), line.end(), ':');
+    if (contains_label(line))
+    {
+        start = std::find(line.begin(), line.end(), ':');
+        safe_increment<std::string::const_iterator, std::string>(start, line, 1);
+    }
+    else
+        start = line.begin();
 
-	// Increment as long as we're on a colon or space.
-	while (it != line.end() && (*it == ':' || isspace(*it)))
-		++it;
+    // Increment as long as we're on a colon or space.
+    while (start != line.end() && isspace(*start))
+        ++start;
 
-	// Iterate the function name until we reach a space.
-	while (it != line.end() && !isspace(*it))
-	{
-		op.push_back(*it);
-		++it;
-	}
-	
-	return op;
+    if (start == line.end())
+        return std::string("");
+
+    it = std::find_first_of(start, line.end(), Whitespace.begin(), Whitespace.end());
+
+    return std::string(start, it);
 }
 
 // Check if a line contains a pseudo instruction. Pseudo instructions are
@@ -226,25 +364,32 @@ void get_op(std::string::const_iterator& it, const std::string& line, std::strin
 // into one or more native instructions. Return 0 if the line does not
 // contain a pseudo instruction. Otherwise, return the number of native
 // instructions needed to represent the pseudo instruction.
-size_t pseudo_instruction(std::string& line)
+size_t instruction_size(std::string& line)
 {
     std::string op;
     std::string::const_iterator it = line.begin();
 
     // Find the opcode.
-    get_op(it, line, op);
+    op = get_op(it, line);
 
     // Return 0 if no opcode was found.
     if (op.empty())
         return 0;
 
-    if (op == "mov" || op == "li")
-        return 1;
-    else if (op == "la " || op == "bge" || op == "bgt"
-          || op == "ble" || op == "blt" || op == "ble")
+    //std::cout << "Found OP: " << op;
+
+    // Return 2 for pseudo instructions that convert into 2 native instructions.
+    if (op == "la"  || op == "bge" || op == "bgt"
+     || op == "ble" || op == "blt" || op == "ble")
+    {
+        //std::cout << " Adding 2\n";
         return 2;
+    }
     else
-        return 0;
+    {
+        //std::cout << " Adding 1\n";
+        return 1;
+    }
 }
 
 void init_text_labels(Memory& mem, std::vector<Label>& labels)
@@ -280,17 +425,50 @@ void init_text_labels(Memory& mem, std::vector<Label>& labels)
                 if (contains_label(line))
                     labels.push_back(Label(line, loc));
 
-
-                if (is_pseudo(line))
-                    loc += 8;
-                else
-                    loc += 4;
+                loc += instruction_size(line) * 4;
             }
             break;
         }
     }
     file.close();
 }
+
+bool is_pseudo(const std::string& op)
+{
+    return Map_str_to_type.find(op) == Map_str_to_type.end();
+}
+
+/*
+void encode_pseudo(std::string::const_iterator& it, 
+                   const std::string& name,
+                   const std::string& line,
+                   Memory& mem, std::vector<Label>& labels)
+{
+    Instruction i Null_instruction;
+
+    while (next_token(it, line))
+        set_token(i, it, line, labels);
+
+    Instruction j = i;
+
+    if (name == "bge")
+    {
+        set_opcode(j, "slt");
+        set_opcode(i, "beq");
+        set_rd(j, "at");
+        set_rt(i, "at");
+        set_rs(i, "zero");
+    }
+    if (name == "bgt")
+    {
+        set_opcode(j, "slt");
+        set_opcode(i, "bne");
+        set_rd(j, "at");
+        set_rt(i, "at");
+        set_rs(i, "zero");
+    }
+}
+*/
 
 void init_instructions(Memory& mem, std::vector<Label>& labels)
 {
@@ -304,12 +482,10 @@ void init_instructions(Memory& mem, std::vector<Label>& labels)
     }
     while (std::getline(file, line))
     {
-        remove_comments(line);
         if (line.find(Text_seg) != std::string::npos)
         {
             while (std::getline(file, line))
             {
-                //std::cout << line << " " << mem.size() << '\n';
                 remove_comments(line);
                 // Make sure we don't run into the data segment.
                 if (line.find(Data_seg) != std::string::npos)
@@ -319,187 +495,39 @@ void init_instructions(Memory& mem, std::vector<Label>& labels)
                 if (is_whitespace(line) || first_char(line) == '.')
                     continue;
 
+                std::string::const_iterator it;
+
                 // If a label is found, increment the iterator 1 past the label.
                 // If no label is found, start at the beginning of the line.
-                auto it = std::find(line.begin(), line.end(), ':');
-                if (it != line.end())
-                    ++it;
-                else
+                it = std::find(line.begin(), line.end(), ':');
+                if (it == line.end())
                     it = line.begin();
+                else
+                {
+                    // Check the special case of lines with only a label.
+                    if (it + 1 == line.end())
+                        continue;
+                    else
+                        ++it;
+                }
+                //std::cout << "Line: " << line << '\n';
 
                 Instruction i = Null_instruction;
-                std::string name = "";
+                name = get_op(it, line);
 
-                // 1. Scan until we do not find a whitespace.
-                while (it != line.end() && isspace(*it))
-                    ++it;
-
-                // 2. Extract the instruction name.
-                while (it != line.end() && !isspace(*it) && *it != '$')
+                // Check for a pseudo instruction
+                if (is_pseudo(name))
                 {
-                    name.push_back(*it);
-                    ++it;
-                }
-
-                // 3. Or the opt/funct code to the instruction.
-                if (name != "")
-                {
-                    i |= Map_str_to_type.at(name);
-                }
-
-                // 4. Scan until we do not find a whitespace.
-                while (it != line.end() && isspace(*it))
-                    ++it;
-
-                // 5. Check for rs register.
-                name = "";
-                if (it != line.end() && *it == '$')
-                {
-                    ++it;
-                    while (it != line.end() && !isspace(*it) && *it != ',')
-                    {
-                        name.push_back(*it);
-                        ++it;
-                    }
-                    i |= set_rs(reg_to_int(name));
-                }
-
-                // 6. Scan until we do not find a whitespace or comma.
-                while (it != line.end() && (isspace(*it) || *it == ','))
-                    ++it;
-
-                // 7. Check for rt register.
-                name = "";
-                if (it != line.end() && *it == '$')
-                {
-                    ++it;
-                    while (it != line.end() && !isspace(*it) && *it != ',')
-                    {
-                        name.push_back(*it);
-                        ++it;
-                    }
-                    i |= set_rt(reg_to_int(name));
-                }
-
-                // 8. Scan until we do not find a whitespace or comma.
-                while (it != line.end() && (isspace(*it) || *it == ','))
-                    ++it;
-
-                // 9. Check for rd register.
-                name = "";
-                if (it != line.end() && *it == '$')
-                {
-                    ++it;
-                    while (it != line.end() && !isspace(*it) && *it != ',')
-                    {
-                        name.push_back(*it);
-                        ++it;
-                    }
-                    i |= set_rd(reg_to_int(name));
-                    // Push back instruction and continue.
-                    mem.push<Instruction>(i);
+                    std::cout << "PSEUDO!!! : " << name << '\n';
                     continue;
                 }
-                // 10. Convert any R-Type to I-Type if R-Type was used as a 
-                // pseudo instruction.
-                if ((i & 0x3f) == Add)
-                {
-                    i |= Add << 26;
-                }
 
-                // 10. Check for immediate value.
-                name = "";
-                // Start with a label name.
-                if (it != line.end() && isalpha(*it))
-                {
-                    while (it != line.end() && !isspace(*it))
-                    {
-                        name.push_back(*it);
-                        ++it;
-                    }
-                    for (auto lab = labels.begin(); lab != labels.end(); ++lab)
-                    {
-                        if (lab->name == name)
-                        {
-                            i |= lab->loc;
-                        }
-                    }
-                    mem.push<Instruction>(i);
-                }
-                else if (it != line.end() && isdigit(*it))
-                {
-                    bool offset = false;
-                    while (it != line.end() && !isspace(*it))
-                    {
-                        if (*it == '(')
-                        {
-                            offset = true;
-                            break;
-                        }
-                        name.push_back(*it);
-                        ++it;
-                    }
-                    // Handle Pseudo Instructions. Here, we have a immediate value,
-                    // followed by a label. We need to insert an instruction to store
-                    // the immiate value into the register $at (position 1).
-                    if (is_pseudo(line))
-                    {
-                        Instruction pi = Null_instruction;
-                        pi |= Li;
-                        pi |= set_rs(1);
-                        pi |= std::stoi(name);
-                        mem.push<Instruction>(pi);
+                set_opcode(i, name);
 
-                        while (it != line.end() && (isdigit(*it) || isspace(*it)))
-                            ++it;
+                while (next_token(it, line))
+                    set_token(i, it, line, labels);
 
-                        if (it == line.end() || !isalpha(*it))
-                            std::cout << "Error: Pseudo Instruction found, but no second label found.\n";
-
-                        name = "";
-                        while (it != line.end() && !isspace(*it))
-                        {
-                            name.push_back(*it);
-                            ++it;
-                        }
-
-                        std::cout << "looking for pseudo:" << name << '\n';
-
-                        for (auto lab = labels.begin(); lab != labels.end(); ++lab)
-                        {
-                            if (lab->name == name)
-                            {
-                                i |= lab->loc;
-                            }
-                        }
-                        i |= set_rt(1);
-                        mem.push<Instruction>(i);
-                        continue;
-                    }
-                    else
-                    {
-                        i |= std::stoi(name);
-                    }
-
-                    // Handle offsets.
-                    if (offset)
-                    {
-                        name = "";  
-                        it += 2;
-                        while (it != line.end() && *it != ')')
-                        {
-                            name += *it;
-                            ++it;
-                        }
-                        i |= set_rt(reg_to_int(name));
-                    }
-                    mem.push<Instruction>(i);
-                }
-                else
-                {
-                    mem.push<Instruction>(i);
-                }
-
+                mem.push<Instruction>(i);
             }
         }
     }
