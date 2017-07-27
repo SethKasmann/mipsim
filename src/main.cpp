@@ -19,6 +19,7 @@ int main()
 {
 	Alu alu[128] = { _null };
 	alu[12] = _syscall;
+	alu[16] = _mfhi;
 	alu[27] = _div;
 	alu[32] = _add;
 	alu[36] = _and;
@@ -36,6 +37,17 @@ int main()
     init_text_labels(mem, labels);
     init_instructions(mem, labels);
     Registers regs(labels);
+
+    while (!regs.get_exit())
+    {
+    	regs.set_ir(mem.fetch<Instruction>(regs[pc]));
+    	regs[pc] += 4;
+    	d.decode(regs.get_ir());
+    	alu[d.fi()](regs, d, mem);
+    	//std::cout << regs;
+    	//int z;
+    	//std::cin >> z;
+    }
 
     return 0;
 }
