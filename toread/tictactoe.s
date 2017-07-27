@@ -39,14 +39,14 @@ PrintBoard:
 			beq $s5, $k0, Tie
 			#beq $s5, 9, Tie
 
-			add $s5, $s5, 1
+			addi $s5, $s5, 1
 
 			###########
 			li  $k0, 2
 			div $s0, $k0
-			move $t0, $hi
+			mfhi $t0
 			#rem $t0, $s0, 2
-			add $s0, $s0, 1
+			addi $s0, $s0, 1
 			bnez $t0, Player0
 
 PlayerX:
