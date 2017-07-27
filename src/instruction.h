@@ -86,25 +86,26 @@ const std::map<std::string, Instruction> Map_str_to_type =
 
 void _null(Registers& r, Decoder& d, Memory& mem)
 {
+    std::cout << "NULL?...\n";
     return;
 }
 
 void _bltz(Registers& r, Decoder& d, Memory& mem)
 {
     if (r[d.rs()] == r[d.rt()])
-        r = d.imm();
+        r[pc] = d.imm();
 }
 
 void _beq(Registers& r, Decoder& d, Memory& mem)
 {
     if (r[d.rs()] == r[d.rt()])
-        r = d.imm();
+        r[pc] = d.imm();
 }
 
 void _bne(Registers& r, Decoder& d, Memory& mem)
-{  
+{
     if (r[d.rs()] != r[d.rt()])
-        r = d.imm();
+        r[pc] = d.imm();
 }
 
 void _addi(Registers& r, Decoder& d, Memory& mem)
@@ -124,17 +125,17 @@ void _lui(Registers& r, Decoder& d, Memory& mem)
 
 void _lb(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rs()] = static_cast<Register>(mem.fetch<Byte>(d.imm()));
+    r[d.rt()] = static_cast<Register>(mem.fetch<Byte>(d.imm()));
 }
 
 void _sb(Registers& r, Decoder& d, Memory& mem)
 {
-    mem.store<Byte>(static_cast<Byte>(r[d.rs()]), r[d.rt()] + d.imm());
+    mem.store<Byte>(static_cast<Byte>(r[d.rt()]), r[d.rs()] + d.imm());
 }
 
 void _j(Registers& r, Decoder& d, Memory& mem)
 {   
-    r = d.imm();
+    r[pc] = d.imm();
 }
 
 void _add(Registers& r, Decoder& d, Memory& mem)
@@ -149,8 +150,8 @@ void _and(Registers& r, Decoder& d, Memory& mem)
 
 void _div(Registers& r, Decoder& d, Memory& mem)
 {
-    r[lo] = r[d.rs()] / r[d.rt()];
-    r[hi] = r[d.rs()] % r[d.rt()];
+    r[lo] = r[d.rd()] / r[d.rt()];
+    r[hi] = r[d.rd()] % r[d.rt()];
 }
 
 void _syscall(Registers& r, Decoder& d, Memory& mem)
@@ -179,7 +180,7 @@ void _syscall(Registers& r, Decoder& d, Memory& mem)
     }
     else if (r[v0] == 10)
     {
-        r[pc] = -1;
+        r.set_exit(true);
     }
     else if (r[v0] == 11)
     {
