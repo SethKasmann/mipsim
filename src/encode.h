@@ -91,6 +91,7 @@ int reg_to_int(const std::string& s)
 void set_opcode(Instruction& i, const std::string& op)
 {
     assert(op != "");
+    std::cout << "setting... " << op << '\n';
     i |= Map_str_to_type.at(op);
 }
 
@@ -107,27 +108,27 @@ void set_imm(Instruction& i, const std::string& num)
 
 void set_rs(Instruction& i, const std::string& reg)
 {
-    //std::cout << "\t\trs " << reg_to_int(reg) << '\n';
-    i |= reg_to_int(reg) << 16;
+    std::cout << "\t\trs " << reg_to_int(reg) << '\n';
+    i |= reg_to_int(reg) << 21;
 }
 
 void set_rt(Instruction& i, const std::string& reg)
 {
-    //std::cout << "\t\trt " << reg_to_int(reg) << '\n';
-    i |= reg_to_int(reg) << 11;
+    std::cout << "\t\trt " << reg_to_int(reg) << '\n';
+    i |= reg_to_int(reg) << 16;
 }
 
 void set_rd(Instruction& i, const std::string& reg)
 {
-    //std::cout << "\t\trd " << reg_to_int(reg) << '\n';
-    i |= reg_to_int(reg) << 6;
+    std::cout << "\t\trd " << reg_to_int(reg) << '\n';
+    i |= reg_to_int(reg) << 11;
 }
 
 void set_reg(Instruction& i, const std::string& reg)
 {
-    static const int rd = 0x1f << 6;
-    static const int rt = 0x1f << 11;
-    static const int rs = 0x1f << 16;
+    static const int rd = 0x1f << 11;
+    static const int rt = 0x1f << 16;
+    static const int rs = 0x1f << 21;
     // R Type
     if (i & 0x31)
     {
@@ -156,7 +157,7 @@ void set_label(Instruction& i, const std::string& lab, std::vector<Label>& label
     {
         if (it->name == lab)
         {
-            //std::cout << "\tlab " << it->name << '\n';
+            std::cout << "\tlab " << it->name << ' ' << it->loc << '\n';
             i |= it->loc;
             return;
         }
@@ -227,9 +228,21 @@ void ascii_to_mem(const std::string& s, Memory& mem)
         {
             for (++it0; it0 < it1; ++it0)
                 if (*it0 == '\\')
+                {
+                    if (get_escape(int(*(it0 + 1))) == 0)
+                    {
+                        std::cout <<" wait a second...\n";
+                    }
                     mem.push<Byte>(get_escape(*++it0));
+                }
                 else
+                {
                     mem.push<Byte>(*it0);
+                    if (int(*it0) == 0)
+                    {
+                        std::cout << "0 found.. waiiiit...\n";
+                    }
+                }
             break;
         }
     }
@@ -237,6 +250,7 @@ void ascii_to_mem(const std::string& s, Memory& mem)
 
 void asciiz_to_mem(const std::string& s, Memory& mem)
 {
+    std::cout << "adding to mem...:" << s << '\n';
     ascii_to_mem(s, mem);
     mem.push<Byte>('\0');
 }
@@ -425,7 +439,11 @@ void init_text_labels(Memory& mem, std::vector<Label>& labels)
                 if (contains_label(line))
                     labels.push_back(Label(line, loc));
 
-                loc += instruction_size(line) * 4;
+                std::string::const_iterator it = line.begin();
+                if (get_op(it, line).empty())
+                    continue;
+
+                loc += 4;//instruction_size(line) * 4;
             }
             break;
         }
