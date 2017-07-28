@@ -280,6 +280,7 @@ std::vector<std::string> tokenize(std::string& line)
     return tokens;
 }
 
+/* Finds labels in the text segment and computes their memory location */
 void encode_text_labels(size_t address, std::vector<Label>& labels)
 {
     std::ifstream file;
@@ -328,11 +329,13 @@ void encode_text_labels(size_t address, std::vector<Label>& labels)
     }
 }   
 
+/* Returns true if the instruction is a r-type instruction */
 bool is_r_type(Instruction i)
 {
     return i & 0x31;
 }
 
+/* Converts a vector of string tokens to a MIPS instruction */
 Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
 {
     Instruction ret = Null_instruction;
@@ -392,6 +395,8 @@ Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
     return ret;
 }
 
+/* Converts a line of MIPS source code in the text segment to a
+   MIPS instruction and pushes it to the memory vector */
 void encode_instructions(Memory& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
