@@ -88,136 +88,6 @@ int reg_to_int(const std::string& s)
     return std::stoi(s);
 }
 
-void set_opcode(Instruction& i, const std::string& op)
-{
-    assert(op != "");
-    std::cout << "setting... " << op << '\n';
-    i |= Map_str_to_type.at(op);
-}
-
-void set_shift(Instruction& i, const std::string& num)
-{
-    assert(std::stoi(num) > 0);
-    i |= (std::stoi(num) & 0x1f) << 6;
-}
-
-void set_imm(Instruction& i, const std::string& num)
-{
-    i |= static_cast<Instruction>(std::stoi(num) & 0xffff);
-}
-
-void set_rs(Instruction& i, const std::string& reg)
-{
-    std::cout << "\t\trs " << reg_to_int(reg) << '\n';
-    i |= reg_to_int(reg) << 21;
-}
-
-void set_rt(Instruction& i, const std::string& reg)
-{
-    std::cout << "\t\trt " << reg_to_int(reg) << '\n';
-    i |= reg_to_int(reg) << 16;
-}
-
-void set_rd(Instruction& i, const std::string& reg)
-{
-    std::cout << "\t\trd " << reg_to_int(reg) << '\n';
-    i |= reg_to_int(reg) << 11;
-}
-
-void set_reg(Instruction& i, const std::string& reg)
-{
-    static const int rd = 0x1f << 11;
-    static const int rt = 0x1f << 16;
-    static const int rs = 0x1f << 21;
-    // R Type
-    if (i & 0x31)
-    {
-        if (i & rt)
-        {
-            set_rs(i, reg);
-        }
-        else if (i & rd)
-            set_rt(i, reg);
-        else
-            set_rd(i, reg);
-    }
-    // I Type
-    else
-    {
-        if (i & rt)
-            set_rs(i, reg);
-        else
-            set_rt(i, reg);
-    }
-}
-
-void set_label(Instruction& i, const std::string& lab, std::vector<Label>& labels)
-{
-    for (auto it = labels.begin(); it != labels.end(); ++it)
-    {
-        if (it->name == lab)
-        {
-            std::cout << "\tlab " << it->name << ' ' << it->loc << '\n';
-            i |= it->loc;
-            return;
-        }
-    }
-    std::cout << "Error: label \"" << lab << "\" not found in labels vector\n";
-}
-
-void set_token(Instruction& i, std::string::const_iterator& it, const std::string& line, std::vector<Label>& labels)
-{
-    // Immediate value.
-    if (*it == '-' || isdigit(*it))
-    {
-        std::string num = "";
-        while (it != line.end() && !isspace(*it) && *it != ',' && *it != '(')
-        {
-            num.push_back(*it);
-            ++it;
-        }
-        // For an R-Type instructions an immediate value can only be a
-        // 5 bit shift. For all others, set as an immediate value.
-        //std::cout << "\tPushing imm: " << num << '\n';
-        if (i & 0x31)
-            set_shift(i, num);
-        else
-            set_imm(i, num);
-    }
-    // Register
-    else if (*it == '$')
-    {
-        std::string reg = "";
-        ++it;
-        while (it != line.end() && !isspace(*it) && *it != ',' && *it != ')')
-        {
-            reg.push_back(*it);
-            ++it;
-        }
-        //std::cout << "\tPushing reg: " << reg << '\n';
-        set_reg(i, reg);
-    }
-    // Label
-    else
-    {
-        std::string lab = "";
-        while (it != line.end() && !isspace(*it))
-        {
-            lab.push_back(*it);
-            ++it;
-        }
-        //std::cout << "\tPushing lab: " << lab << '\n';
-        set_label(i, lab, labels);
-    }
-}
-
-bool next_token(std::string::const_iterator& it, std::string& line)
-{
-    while (it != line.end() && (isspace(*it) || *it == ',' || *it == ')' || *it == '('))
-        ++it;
-    return it != line.end();
-}
-
 void ascii_to_mem(const std::string& s, Memory& mem)
 {
     //auto it0, it1;
@@ -373,181 +243,187 @@ std::string get_op(std::string::const_iterator& it, const std::string& line)
     return std::string(start, it);
 }
 
-// Check if a line contains a pseudo instruction. Pseudo instructions are
-// instructions not native to mips. Pseudo instructions are converted
-// into one or more native instructions. Return 0 if the line does not
-// contain a pseudo instruction. Otherwise, return the number of native
-// instructions needed to represent the pseudo instruction.
-size_t instruction_size(std::string& line)
-{
-    std::string op;
-    std::string::const_iterator it = line.begin();
-
-    // Find the opcode.
-    op = get_op(it, line);
-
-    // Return 0 if no opcode was found.
-    if (op.empty())
-        return 0;
-
-    //std::cout << "Found OP: " << op;
-
-    // Return 2 for pseudo instructions that convert into 2 native instructions.
-    if (op == "la"  || op == "bge" || op == "bgt"
-     || op == "ble" || op == "blt" || op == "ble")
-    {
-        //std::cout << " Adding 2\n";
-        return 2;
-    }
-    else
-    {
-        //std::cout << " Adding 1\n";
-        return 1;
-    }
-}
-
-void init_text_labels(Memory& mem, std::vector<Label>& labels)
-{
-    std::ifstream file;
-    std::string line, name;
-    int loc;
-    file.open("toread/tictactoe.s");
-    if (!file)
-    {
-        std::cout << "File could not be opened.\n";
-        return;
-    }
-    while (std::getline(file, line))
-    {
-        remove_comments(line);
-        if (line.find(Text_seg) != std::string::npos)
-        {
-            loc = mem.size();
-            while (std::getline(file, line))
-            {
-                remove_comments(line);
-                // Make sure we don't run into the data segment.
-                if (line.find(Data_seg) != std::string::npos)
-                    break;
-
-                // Make sure we skip lines with only whitespace. Also skip lines
-                // such as '.global main' (e.g. lines that begin with '.')
-                if (is_whitespace(line) || first_char(line) == '.')
-                    continue;
-
-                // Look for a text label.
-                if (contains_label(line))
-                    labels.push_back(Label(line, loc));
-
-                std::string::const_iterator it = line.begin();
-                if (get_op(it, line).empty())
-                    continue;
-
-                loc += 4;//instruction_size(line) * 4;
-            }
-            break;
-        }
-    }
-    file.close();
-}
-
 bool is_pseudo(const std::string& op)
 {
     return Map_str_to_type.find(op) == Map_str_to_type.end();
 }
 
-/*
-void encode_pseudo(std::string::const_iterator& it, 
-                   const std::string& name,
-                   const std::string& line,
-                   Memory& mem, std::vector<Label>& labels)
+
+/* Converts a line of MIPS source into a vector of string tokens */
+std::vector<std::string> tokenize(std::string& line)
 {
-    Instruction i Null_instruction;
+    std::vector<std::string> tokens;
+    std::string token;
 
-    while (next_token(it, line))
-        set_token(i, it, line, labels);
+    // Replace parantheses with spaces. This will make tokenizing offsets
+    // easier.
+    std::replace(line.begin(), line.end(), '(', ' ');
+    std::replace(line.begin(), line.end(), ')', ' ');
 
-    Instruction j = i;
+    // Create an input stream of the line.
+    std::istringstream is0(line);
 
-    if (name == "bge")
+    while (is0 >> std::skipws >> token)
     {
-        set_opcode(j, "slt");
-        set_opcode(i, "beq");
-        set_rd(j, "at");
-        set_rt(i, "at");
-        set_rs(i, "zero");
+        // Return if a comment or accessibility command is found.
+        if (*token.begin() == '.' || *token.begin() == '#')
+            return tokens;
+
+        // Create an input stream of the token. We can parse the token by
+        // commas using std::getline.
+        std::istringstream is1(token);
+
+        // Once parsed, push the token to our vector.
+        while (std::getline(is1, token, ','))
+            tokens.push_back(token);
     }
-    if (name == "bgt")
-    {
-        set_opcode(j, "slt");
-        set_opcode(i, "bne");
-        set_rd(j, "at");
-        set_rt(i, "at");
-        set_rs(i, "zero");
-    }
+    return tokens;
 }
-*/
 
-void init_instructions(Memory& mem, std::vector<Label>& labels)
+void encode_text_labels(size_t address, std::vector<Label>& labels)
 {
     std::ifstream file;
-    std::string line, name;
+    std::string line, token;
     file.open("toread/tictactoe.s");
     if (!file)
     {
         std::cout << "File could not be opened.\n";
         return;
     }
+
+    // Search for the text segment.
     while (std::getline(file, line))
     {
         if (line.find(Text_seg) != std::string::npos)
+            break;
+    }
+
+    while (std::getline(file, line))
+    {
+        // Break if we find the data segment.
+        if (line.find(Data_seg) != std::string::npos)
+            break;
+
+        // Tokenize the source code. Text labels will be the first tokens in
+        // the vector.
+        std::vector<std::string> tokens = tokenize(line);
+
+        for (auto it = tokens.begin(); it != tokens.end(); ++it)
         {
-            while (std::getline(file, line))
+            // If a label is found, push it to the labels vector along wth
+            // the address.
+            if (it->find(':') != std::string::npos)
             {
-                remove_comments(line);
-                // Make sure we don't run into the data segment.
-                if (line.find(Data_seg) != std::string::npos)
-                    break;
-
-                // Make sure we skip lines with only whitespace.
-                if (is_whitespace(line) || first_char(line) == '.')
-                    continue;
-
-                std::string::const_iterator it;
-
-                // If a label is found, increment the iterator 1 past the label.
-                // If no label is found, start at the beginning of the line.
-                it = std::find(line.begin(), line.end(), ':');
-                if (it == line.end())
-                    it = line.begin();
-                else
-                {
-                    // Check the special case of lines with only a label.
-                    if (it + 1 == line.end())
-                        continue;
-                    else
-                        ++it;
-                }
-                //std::cout << "Line: " << line << '\n';
-
-                Instruction i = Null_instruction;
-                name = get_op(it, line);
-
-                // Check for a pseudo instruction
-                if (is_pseudo(name))
-                {
-                    std::cout << "PSEUDO!!! : " << name << '\n';
-                    continue;
-                }
-
-                set_opcode(i, name);
-
-                while (next_token(it, line))
-                    set_token(i, it, line, labels);
-
-                mem.push<Instruction>(i);
+                labels.push_back(Label(*it, address));
+            }
+            // The address is only incremented if a label is not found and
+            // another token is present. This would occur if the instruction
+            // was written on the same line as the label.
+            else
+            {
+                address += 4;
+                break;
             }
         }
+    }
+}   
+
+bool is_r_type(Instruction i)
+{
+    return i & 0x31;
+}
+
+Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
+{
+    Instruction ret = Null_instruction;
+
+    // Return the null instruction (0) if the tokens vector is empty.
+    if (tokens.empty())
+        return ret;
+
+    // Create an iterator and skip text labels.
+    std::vector<std::string>::const_iterator it = tokens.begin();
+    while (it->find(':') != std::string::npos)
+    {
+        ++it;
+        if (it == tokens.end())
+            return ret;
+    }
+
+    // OR the opcode.
+    std::cout << "opcode: " << *it << '\n';
+    assert(it != tokens.end() && Map_str_to_type.find(*it) != Map_str_to_type.end());
+    ret |= Map_str_to_type.at(*(it++));
+
+    // OR the remaining operands. We need to handle 3 cases:
+    // 1. Register value
+    // 2. Immediate/Offset value
+    // 3. Shifts
+    int reg_shift = is_r_type(ret) ? 11 : 16;
+    int imm_shift = is_r_type(ret) ?  6 :  0;
+    for (it; it != tokens.end(); ++it)
+    {
+        // Handle registers.
+        if (*it->begin() == '$')
+        {
+            std::cout << "register: " << *it << '\n';
+            ret |= reg_to_int(std::string(it->begin() + 1, it->end())) << reg_shift;
+            reg_shift += 5;
+        }
+        // Handle immediate values.
+        else if (isdigit(*it->begin()) || *it->begin() == '-')
+        {
+            std::cout << "immediate: " << *it << '\n';
+            ret |= static_cast<Instruction>(std::stoi(*it) & 0xffff) << imm_shift;
+        }
+        // Handle lables.
+        else
+        {
+            std::cout << "label: " << *it << '\n';
+            for (auto label = labels.begin(); label != labels.end(); ++label)
+            {
+                if (label->name == *it)
+                {
+                    ret |= label->loc;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
+void encode_instructions(Memory& mem, std::vector<Label>& labels)
+{
+    std::ifstream file;
+    std::string line;
+    file.open("toread/tictactoe.s");
+    if (!file)
+    {
+        std::cout << "File could not be opened.\n";
+        return;
+    }
+
+    // Search for the text segment.
+    while (std::getline(file, line))
+    {
+        if (line.find(Text_seg) != std::string::npos)
+            break;
+    }
+
+    while (std::getline(file, line))
+    {
+        // Break if we find the data segment.
+        if (line.find(Data_seg) != std::string::npos)
+            break;
+
+        std::cout << "Encoding Line: \n"
+                  << line << '\n';
+
+        // Encode the instruction.
+        Instruction i = encode(tokenize(line), labels);
+
+        if (i != Null_instruction)
+            mem.push<Instruction>(i);
     }
     file.close();
 }
