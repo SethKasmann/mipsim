@@ -1,6 +1,7 @@
 #ifndef LABEL_H
 #define LABEL_H
 
+#include <iostream>
 #include <vector>
 #include <string>
 
@@ -15,6 +16,8 @@ public:
         for (it0 = line.begin(); it0 < line.end(), isspace(*it0); ++it0);
         for (it1 = it0; it1 < line.end(), *it1 != ':'; ++it1);
         name = std::string(it0, it1);
+        std::cout << "\tLabel    : " << name << '\n';
+        std::cout << "\tAdddress : " << loc  << '\n';
     }
     int loc;
     std::string name;
