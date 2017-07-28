@@ -30,12 +30,16 @@ int main()
 	alu[72] = _addi;
 	alu[96] = _lb;
 	alu[104] = _sb;
+
+    std::unordered_map<std::string, int> label;
     Memory mem;
     Decoder d;
     std::vector<Label> labels;
     init_data(mem, labels);
-    init_text_labels(mem, labels);
-    init_instructions(mem, labels);
+    encode_text_labels(mem.size(), labels);
+    //init_text_labels(mem, labels);
+    encode_instructions(mem, labels);
+    //init_instructions(mem, labels);
     Registers regs(labels);
 
     while (!regs.get_exit())
