@@ -62,7 +62,7 @@ void Memory::store(T t, int i)
 {
 	if (probe(i))
 	{
-		_mem[i    ] = static_cast<Byte>(t & 0x000000ff      );
+		_mem[i    ] = static_cast<Byte>(t & 0x000000ff        );
 		_mem[i + 1] = static_cast<Byte>((t & 0x0000ff00) >> 8 );
 		_mem[i + 2] = static_cast<Byte>((t & 0x00ff0000) >> 16);
 		_mem[i + 3] = static_cast<Byte>((t & 0xff000000) >> 24);
