@@ -5,19 +5,6 @@ Registers::Registers()
     init();
 }
 
-Registers::Registers(std::vector<Label>& labels)
-{
-    init();
-    for (auto it = labels.begin(); it != labels.end(); ++it)
-    {
-        if (it->name == "main")
-        {
-            _pc = it->loc;
-            break;
-        }
-    }
-}
-
 void Registers::init()
 {
     _pc  = 0;
@@ -27,6 +14,18 @@ void Registers::init()
     _exit = false;
     for (int i = 0; i < MAX_REG; ++i)
         _r[i] = 0;    
+}
+
+void Registers::init(std::vector<Label>& labels)
+{
+    for (auto it = labels.begin(); it != labels.end(); ++it)
+    {
+        if (it->name == "main")
+        {
+            _pc = it->loc;
+            break;
+        }
+    }
 }
 
 Register& Registers::operator[](int i)

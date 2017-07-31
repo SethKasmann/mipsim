@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
-
+#include <stdint.h>
 
 typedef int32_t Register;
 typedef uint32_t Instruction;
@@ -28,8 +28,8 @@ class Registers
 {
 public:
     Registers();
-    Registers(std::vector<Label>& labels);
     void init();
+    void init(std::vector<Label>& labels);
     bool get_exit() const;
     Instruction get_ir() const;
     void set_exit(bool e);
