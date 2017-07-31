@@ -39,6 +39,10 @@ public:
 	{
 		return param1;
 	}
+	uint32_t shamt() const
+	{
+		return param1;
+	}
 	uint32_t rt() const
 	{
 		return param2;
@@ -59,10 +63,6 @@ private:
 	uint32_t addaress() const
 	{
 		return param1;
-	}
-	uint32_t shamt() const
-	{
-		return param3;
 	}
 	uint32_t rs(Instruction i) const
 	{
@@ -103,7 +103,7 @@ private:
 	uint32_t param3;
 };
 
-std::ostream& operator<<(std::ostream& o, const Decoder & d)
+inline std::ostream& operator<<(std::ostream& o, const Decoder & d)
 {
 	o << "<Decoder"
 	  << ", fun_index:" << d.fun_index 
@@ -113,7 +113,7 @@ std::ostream& operator<<(std::ostream& o, const Decoder & d)
 	  << ">"            << std::endl;
 }
 
-void Decoder::decode_r_type(Instruction i)
+inline void Decoder::decode_r_type(Instruction i)
 {
 	fun_index = funct(i);
 	param3 = rd(i);
@@ -125,7 +125,7 @@ void Decoder::decode_r_type(Instruction i)
 		param1 = rs(i);
 }
 
-void Decoder::decode_i_type(Instruction i)
+inline void Decoder::decode_i_type(Instruction i)
 {
 	fun_index = opcode(i) | I_flag;
 	param1 = rs(i);
@@ -133,7 +133,7 @@ void Decoder::decode_i_type(Instruction i)
 	param3 = imm(i);
 }
 
-void Decoder::decode_j_type(Instruction i)
+inline void Decoder::decode_j_type(Instruction i)
 {
 	fun_index = opcode(i) | I_flag;
 	param3 = address(i);

@@ -24,7 +24,7 @@ private:
 	std::vector<Byte> _mem;
 };
 
-bool Memory::probe(int i) const
+inline bool Memory::probe(int i) const
 {
 	int bytes = 3;
 	for (auto it = _mem.begin() + i; it != _mem.end(); ++it, --bytes)
@@ -36,7 +36,7 @@ bool Memory::probe(int i) const
 }
 
 template<typename T>
-T Memory::fetch(int i)
+inline T Memory::fetch(int i)
 {
 	if (probe(i))
 	{
@@ -52,13 +52,13 @@ T Memory::fetch(int i)
 }
 
 template<>
-Byte Memory::fetch<Byte>(int i)
+inline Byte Memory::fetch<Byte>(int i)
 {
 	return _mem[i];
 }
 
 template<typename T>
-void Memory::store(T t, int i)
+inline void Memory::store(T t, int i)
 {
 	if (probe(i))
 	{
@@ -74,13 +74,13 @@ void Memory::store(T t, int i)
 }
 
 template<>
-void Memory::store<Byte>(Byte b, int i)
+inline void Memory::store<Byte>(Byte b, int i)
 {
 	_mem[i] = b;
 }
 
 template<typename T>
-void Memory::push(T t)
+inline void Memory::push(T t)
 {
 	_mem.push_back(static_cast<Byte>(t & 0x000000ff      ));
 	_mem.push_back(static_cast<Byte>((t & 0x0000ff00) >> 8 ));
@@ -89,7 +89,7 @@ void Memory::push(T t)
 }
 
 template<>
-void Memory::push<Byte>(Byte b)
+inline void Memory::push<Byte>(Byte b)
 {
 	_mem.push_back(b);
 }

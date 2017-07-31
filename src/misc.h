@@ -2,6 +2,8 @@
 #define MISC_H
 
 #include <string>
+#include <algorithm>
+#include <cassert>
 
 template<class It, class X>
 void safe_increment(It& it, const X& x, int n)

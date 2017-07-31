@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "label.h"
 #include "misc.h"
+#include "instruction.h"
 
 const std::string Data_seg = ".data";
 const std::string Text_seg = ".text";
@@ -98,21 +99,9 @@ void ascii_to_mem(const std::string& s, Memory& mem)
         {
             for (++it0; it0 < it1; ++it0)
                 if (*it0 == '\\')
-                {
-                    if (get_escape(int(*(it0 + 1))) == 0)
-                    {
-                        std::cout <<" wait a second...\n";
-                    }
                     mem.push<Byte>(get_escape(*++it0));
-                }
                 else
-                {
                     mem.push<Byte>(*it0);
-                    if (int(*it0) == 0)
-                    {
-                        std::cout << "0 found.. waiiiit...\n";
-                    }
-                }
             break;
         }
     }
@@ -120,7 +109,6 @@ void ascii_to_mem(const std::string& s, Memory& mem)
 
 void asciiz_to_mem(const std::string& s, Memory& mem)
 {
-    std::cout << "adding to mem...:" << s << '\n';
     ascii_to_mem(s, mem);
     mem.push<Byte>('\0');
 }
@@ -175,11 +163,11 @@ bool contains_label(const std::string& line)
 	return it != line.end();
 }
 
-void init_data(Memory& mem, std::vector<Label>& labels)
+void init_data(std::string& filename, Memory& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
     std::string line;
-    file.open("toread/tictactoe.s");
+    file.open(filename);
     if (!file)
     {
         std::cout << "File could not be opened.\n";
@@ -281,11 +269,11 @@ std::vector<std::string> tokenize(std::string& line)
 }
 
 /* Finds labels in the text segment and computes their memory location */
-void encode_text_labels(size_t address, std::vector<Label>& labels)
+void encode_text_labels(std::string& filename, size_t address, std::vector<Label>& labels)
 {
     std::ifstream file;
     std::string line, token;
-    file.open("toread/tictactoe.s");
+    file.open(filename);
     if (!file)
     {
         std::cout << "File could not be opened.\n";
@@ -354,7 +342,6 @@ Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
     }
 
     // OR the opcode.
-    std::cout << "opcode: " << *it << '\n';
     assert(it != tokens.end() && Map_str_to_type.find(*it) != Map_str_to_type.end());
     ret |= Map_str_to_type.at(*(it++));
 
@@ -369,20 +356,17 @@ Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
         // Handle registers.
         if (*it->begin() == '$')
         {
-            std::cout << "register: " << *it << '\n';
             ret |= reg_to_int(std::string(it->begin() + 1, it->end())) << reg_shift;
             reg_shift += 5;
         }
         // Handle immediate values.
         else if (isdigit(*it->begin()) || *it->begin() == '-')
         {
-            std::cout << "immediate: " << *it << '\n';
             ret |= static_cast<Instruction>(std::stoi(*it) & 0xffff) << imm_shift;
         }
         // Handle lables.
         else
         {
-            std::cout << "label: " << *it << '\n';
             for (auto label = labels.begin(); label != labels.end(); ++label)
             {
                 if (label->name == *it)
@@ -397,11 +381,11 @@ Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
 
 /* Converts a line of MIPS source code in the text segment to a
    MIPS instruction and pushes it to the memory vector */
-void encode_instructions(Memory& mem, std::vector<Label>& labels)
+void encode_instructions(std::string& filename, Memory& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
     std::string line;
-    file.open("toread/tictactoe.s");
+    file.open(filename);
     if (!file)
     {
         std::cout << "File could not be opened.\n";
@@ -420,9 +404,6 @@ void encode_instructions(Memory& mem, std::vector<Label>& labels)
         // Break if we find the data segment.
         if (line.find(Data_seg) != std::string::npos)
             break;
-
-        std::cout << "Encoding Line: \n"
-                  << line << '\n';
 
         // Encode the instruction.
         Instruction i = encode(tokenize(line), labels);
