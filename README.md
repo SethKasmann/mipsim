@@ -5,6 +5,7 @@ and interpret, compile, and execute the code simulating MIPS as much as possible
 # Instructions
 MipSim can interpret most native MIPS instructions, but in it's current stage can only handle a handful of pseudo instructions.
 Here's a list of the pseudo instructions MipSim can run:
+
 li   (load immediate)
 la   (load address)
 mov  (move)
