@@ -9,9 +9,13 @@ typedef uint32_t Instruction;
 typedef int32_t Word;
 typedef int16_t HalfWord;
 
+// Stack size of 1MB;
+const int Stack_size = 1000 * 1000;
+
 class Memory
 {
 public:
+	void init_stack();
 	template<typename T> void push(T t);
 	template<typename T> void store(T t, int i);
 	template<typename T> T fetch(int i);
@@ -19,6 +23,7 @@ public:
 	bool probe(int i) const;
 private:
 	std::vector<Byte> _mem;
+	int _stack;
 };
 
 template<typename T>

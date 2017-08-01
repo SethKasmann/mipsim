@@ -15,3 +15,10 @@ size_t Memory::size() const
 {
 	return _mem.size();	
 }
+
+void Memory::init_stack()
+{
+	_stack = _mem.size();
+	std::vector<Byte> stack(Stack_size);
+	_mem.insert(_mem.end(), stack.begin(), stack.end());
+}
