@@ -13,6 +13,7 @@ const std::string Data_seg = ".data";
 const std::string Text_seg = ".text";
 const std::string Whitespace = " \t\n";
 
+/* Return an integer representation of a string register name */
 int reg_to_int(const std::string& s)
 {
     if (s == "zero")
@@ -89,6 +90,7 @@ int reg_to_int(const std::string& s)
     return std::stoi(s);
 }
 
+/* Store a line of .ascii from the data segment in memory */
 void ascii_to_mem(const std::string& s, Memory& mem)
 {
     //auto it0, it1;
@@ -107,12 +109,14 @@ void ascii_to_mem(const std::string& s, Memory& mem)
     }
 }
 
+/* Store a line of .asciiz from the data segment in memory */
 void asciiz_to_mem(const std::string& s, Memory& mem)
 {
     ascii_to_mem(s, mem);
     mem.push<Byte>('\0');
 }
 
+/* Store a line of .byte from the data segment in memory */
 void byte_to_mem(const std::string& s, Memory& mem)
 {
     // Find the first apostrophe.
@@ -135,6 +139,7 @@ void byte_to_mem(const std::string& s, Memory& mem)
     }
 }
 
+/* Store a line of .word from the data segment in memory */
 void word_to_mem(const std::string& s, Memory& mem)
 {
     // Don't rule out the possibility there is a number in the lable. First,
@@ -156,13 +161,15 @@ void word_to_mem(const std::string& s, Memory& mem)
 }
 
 
-// Check if a line contains a label.
+/* Check to see if a line contains a label */
 bool contains_label(const std::string& line)
 {
 	auto it = std::find(line.begin(), line.end(), ':');
 	return it != line.end();
 }
 
+/* Converts a line of MIPS source code in the data segment and pushes
+   the data to the memory vector */
 void init_data(std::string& filename, Memory& mem, std::vector<Label>& labels)
 {
     std::ifstream file;
@@ -204,38 +211,6 @@ void init_data(std::string& filename, Memory& mem, std::vector<Label>& labels)
     }
     file.close();
 }
-
-// Returns the opcode as a string. If no opcode is found, return the empty
-// string.
-std::string get_op(std::string::const_iterator& it, const std::string& line)
-{
-    std::string::const_iterator start;
-
-    if (contains_label(line))
-    {
-        start = std::find(line.begin(), line.end(), ':');
-        safe_increment<std::string::const_iterator, std::string>(start, line, 1);
-    }
-    else
-        start = line.begin();
-
-    // Increment as long as we're on a colon or space.
-    while (start != line.end() && isspace(*start))
-        ++start;
-
-    if (start == line.end())
-        return std::string("");
-
-    it = std::find_first_of(start, line.end(), Whitespace.begin(), Whitespace.end());
-
-    return std::string(start, it);
-}
-
-bool is_pseudo(const std::string& op)
-{
-    return Map_str_to_type.find(op) == Map_str_to_type.end();
-}
-
 
 /* Converts a line of MIPS source into a vector of string tokens */
 std::vector<std::string> tokenize(std::string& line)
