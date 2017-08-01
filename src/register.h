@@ -24,6 +24,7 @@ enum RegisterName
     pc,   ir,   lo,   hi
 };
 
+/* Class to simulate Mips registers */
 class Registers
 {
 public:
@@ -42,6 +43,7 @@ private:
     Register _lo;
     Register _hi;
     Instruction _ir;
+    // Exit flag is set to true when the program is terminated.
     bool _exit;
 };
 

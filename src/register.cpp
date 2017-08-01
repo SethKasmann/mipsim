@@ -16,6 +16,7 @@ void Registers::init()
         _r[i] = 0;    
 }
 
+/* Set the $pc register to the value of the label 'main' */
 void Registers::init(std::vector<Label>& labels)
 {
     for (auto it = labels.begin(); it != labels.end(); ++it)
@@ -89,8 +90,8 @@ std::ostream& operator<<(std::ostream& o, Registers& r)
       << "  $sp: " << std::setw(10) << r._r[sp]   << ' '
       << "  $fp: " << std::setw(10) << r._r[fp]   << ' '
       << "  $ra: " << std::setw(10) << r._r[ra]   << '\n'
-      << "  $lo: " << std::setw(10) << r._lo      << ' '
-      << "  $hi: " << std::setw(10) << r._hi      << '\n';
+      << "  $lo: " << std::setw(10) << r._r[lo]   << ' '
+      << "  $hi: " << std::setw(10) << r._r[hi]   << '\n';
 
     return o;
 }
