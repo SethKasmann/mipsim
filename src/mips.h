@@ -46,7 +46,14 @@ namespace mips
         init_data(file, mem, labels);
         encode_text_labels(file, mem.size(), labels);
         encode_instructions(file, mem, labels);
+        // Store the location of main in the $pc register.
         regs.init(labels);
+        // Initialize the memory stack.
+        mem.init_stack();
+        // Store the location at the top of the stack in the $sp and $fp
+        // registers.
+        regs[sp] = mem.size() - 1;
+        regs[fp] = mem.size() - 1;
     }
 
     /* Verify the program is running. */
