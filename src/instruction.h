@@ -4,6 +4,8 @@
 #include <string>
 #include <map>
 #include <cassert>
+#include <stdexcept>
+#include <limits.h>
 #include "register.h"
 #include "memory.h"
 #include "decode.h"
@@ -68,6 +70,11 @@ const Instruction Sw    = 0x2c << 26;
 
 extern const std::map<std::string, Instruction> Map_str_to_type;
 extern const Alu alu[Max_instructions];
+
+/* For add, addi, and sub Mips throws exepctions for overflow.
+   addu, addiu, and subu ignore these exceptions */
+void overflow_add();
+void overflow_sub();
 
 /* R-Type instruction set. */
 void _null(Registers& r, Decoder& d, Memory& mem);

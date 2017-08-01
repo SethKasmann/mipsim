@@ -48,6 +48,21 @@ const Alu alu[Max_instructions] =
     _null,  _null,  _null,  _null, _null, _null, _null, _null
 };
 
+/* Throws an exception for addition overflow */
+void overflow_add(int param1, int param2)
+{
+    if (param2 > 0 && param1 > INT_MAX - param2)
+        throw std::overflow_error("addition overflow occured.");
+}
+
+/* Throws an exception for subtraction overflow */
+void overflow_sub(int param1, int param2)
+{
+    if (param2 < 0 && param1 < INT_MIN - param2)
+        throw std::overflow_error("subtraction overflow occured.");
+}
+
+/* This function is simply a placeholder in the alu */
 void _null(Registers& r, Decoder& d, Memory& mem)
 {
     std::cout << "NULL?...\n";
@@ -157,13 +172,17 @@ void _mtlo(Registers& r, Decoder& d, Memory& mem)
 }
 
 void _mult(Registers& r, Decoder& d, Memory& mem)
-{
-    r[lo] = r[d.rd()] * r[d.rt()];
+{  
+    int64_t result = static_cast<int64_t>(r[d.rd()]) * r[d.rt()];
+    r[lo] = static_cast<Register>(result);
+    r[hi] = static_cast<Register>(result >> 32);
 }
 
 void _multu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[lo] = r[d.rd()] * r[d.rt()];
+    uint64_t result = static_cast<uint64_t>(r[d.rd()]) * r[d.rt()];
+    r[lo] = static_cast<Register>(result);
+    r[hi] = static_cast<Register>(result >> 32);
 }
 
 void _div(Registers& r, Decoder& d, Memory& mem)
@@ -174,12 +193,13 @@ void _div(Registers& r, Decoder& d, Memory& mem)
 
 void _divu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[lo] = r[d.rd()] / r[d.rt()];
-    r[hi] = r[d.rd()] % r[d.rt()];
+    r[lo] = static_cast<uint32_t>(r[d.rd()]) / static_cast<uint32_t>(r[d.rt()]);
+    r[hi] = static_cast<uint32_t>(r[d.rd()]) % static_cast<uint32_t>(r[d.rt()]);
 }
 
 void _add(Registers& r, Decoder& d, Memory& mem)
 {
+    overflow_add(r[d.rs()], r[d.rt()]);
     r[d.rd()] = r[d.rs()] + r[d.rt()];
 }
 
@@ -190,6 +210,7 @@ void _addu(Registers& r, Decoder& d, Memory& mem)
 
 void _sub(Registers& r, Decoder& d, Memory& mem)
 {
+    overflow_sub(r[d.rs()], r[d.rt()]);
     r[d.rd()] = r[d.rs()] - r[d.rt()];
 }
 
@@ -271,6 +292,7 @@ void _bgtz(Registers& r, Decoder& d, Memory& mem)
 
 void _addi(Registers& r, Decoder& d, Memory& mem)
 {
+    overflow_add(r[d.rs()], d.imm());
     r[d.rt()] = r[d.rs()] + d.imm();
 }
 
@@ -311,27 +333,27 @@ void _lui(Registers& r, Decoder& d, Memory& mem)
 
 void _lb(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = static_cast<Register>(mem.fetch<Byte>(d.imm()));
+    r[d.rt()] = static_cast<Register>(mem.fetch<Byte>(r[d.rs()] + d.imm()));
 }
 
 void _lh(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = mem.fetch<HalfWord>(d.imm());
+    r[d.rt()] = mem.fetch<HalfWord>(r[d.rs()] + d.imm());
 }
 
 void _lbu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = static_cast<Register>(mem.fetch<Byte>(d.imm()));
+    r[d.rt()] = static_cast<Register>(mem.fetch<Byte>(r[d.rs()] + d.imm()));
 }
 
 void _lhu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = mem.fetch<HalfWord>(d.imm());
+    r[d.rt()] = mem.fetch<HalfWord>(r[d.rs()] + d.imm());
 }
 
 void _lw(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = mem.fetch<Word>(d.imm());
+    r[d.rt()] = mem.fetch<Word>(r[d.rs()] + d.imm());
 }
 
 void _sb(Registers& r, Decoder& d, Memory& mem)
