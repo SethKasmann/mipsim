@@ -5,10 +5,11 @@
 #include <iostream>
 #include <stdexcept>
 
-typedef unsigned char Byte;
+/* Native Mips types. */
 typedef uint32_t Instruction;
 typedef int32_t Word;
 typedef int16_t HalfWord;
+typedef unsigned char Byte;
 
 /* Stack size of 1MB */
 const size_t Stack_size = 1000 * 1000;
