@@ -90,8 +90,8 @@ std::ostream& operator<<(std::ostream& o, Registers& r)
       << "  $sp: " << std::setw(10) << r._r[sp]   << ' '
       << "  $fp: " << std::setw(10) << r._r[fp]   << ' '
       << "  $ra: " << std::setw(10) << r._r[ra]   << '\n'
-      << "  $lo: " << std::setw(10) << r._r[lo]   << ' '
-      << "  $hi: " << std::setw(10) << r._r[hi]   << '\n';
+      << "  $lo: " << std::setw(10) << r._lo      << ' '
+      << "  $hi: " << std::setw(10) << r._hi      << '\n';
 
     return o;
 }
