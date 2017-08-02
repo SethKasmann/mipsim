@@ -22,6 +22,11 @@ template<> size_t size_of<Word>();
 template<> size_t size_of<HalfWord>();
 template<> size_t size_of<Byte>();
 
+/* The Memory class simulates Mips memory. All native Mips types
+   (Instructions, Words, Halfwords, and Bytes) are stored as single
+   bytes (unsgiend char). Types of a greater size are split every 8
+   bits and stored in contiguous chunks. All data fetched from memory
+   is interpreted during the runtime of the simulated program. */
 class Memory
 {
 public:
@@ -33,6 +38,8 @@ public:
 	template<typename T> void probe(int first) const;
 private:
 	std::vector<Byte> _mem;
+	// Variable to keep track of the location of the stack. Used for detecting
+	// stack overflow.
 	int _stack;
 };
 
