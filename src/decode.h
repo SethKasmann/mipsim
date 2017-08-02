@@ -3,7 +3,7 @@
 
 typedef uint32_t Instruction;
 
-const uint32_t I_flag = 0x40;
+const int32_t I_flag = 0x40;
 
 enum FunctionType
 {
@@ -31,27 +31,27 @@ public:
 	void decode_i_type(Instruction i);
 	void decode_j_type(Instruction i);
 	friend std::ostream& operator<<(std::ostream& o, const Decoder & d);
-	uint32_t fi() const
+	int32_t fi() const
 	{
 		return fun_index;
 	}
-	uint32_t rs() const
+	int32_t rs() const
 	{
 		return param1;
 	}
-	uint32_t shamt() const
+	int32_t shamt() const
 	{
 		return param1;
 	}
-	uint32_t rt() const
+	int32_t rt() const
 	{
 		return param2;
 	}
-	uint32_t rd() const
+	int32_t rd() const
 	{
 		return param3;
 	}
-	uint32_t imm() const
+	int32_t imm() const
 	{
 		return param3;
 	}
@@ -60,35 +60,35 @@ private:
 	{
 	    return (i & 0xfc000000) >> 26;
 	}
-	uint32_t addaress() const
+	int32_t addaress() const
 	{
 		return param1;
 	}
-	uint32_t rs(Instruction i) const
+	int32_t rs(Instruction i) const
 	{
 	    return i >> 21 & 0x1f;
 	}
-	uint32_t rt(Instruction i) const
+	int32_t rt(Instruction i) const
 	{
 	    return i >> 16 & 0x1f;
 	}
-	uint32_t rd(Instruction i) const
+	int32_t rd(Instruction i) const
 	{
 	    return i >> 11 & 0x1f;
 	}
-	uint32_t imm(Instruction i) const
+	int32_t imm(Instruction i) const
 	{
-	    return i & 0xffff;
+	    return int16_t(i & 0xffff);
 	}
-	uint32_t funct(Instruction i) const
+	int32_t funct(Instruction i) const
 	{
 	    return i & 0x3f;
 	}
-	uint32_t shamt(Instruction i) const
+	int32_t shamt(Instruction i) const
 	{
 		return (i & 0x7c0) >> 6;
 	}
-	uint32_t address(Instruction i) const
+	int32_t address(Instruction i) const
 	{
 		return i & 0x3ffffff;
 	}
@@ -97,10 +97,11 @@ private:
 		uint32_t op = opcode(i);
 		return op == 0 ? r_type : op == 2 || op == 3 ? j_type : i_type;
 	}
-	uint32_t fun_index;
-	uint32_t param1;
-	uint32_t param2;
-	uint32_t param3;
+	// Should these be signed / unsigned short?
+	int32_t fun_index;
+	int32_t param1;
+	int32_t param2;
+	int32_t param3;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Decoder & d)
