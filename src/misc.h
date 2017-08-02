@@ -52,5 +52,3 @@ char first_char(const std::string& line)
         return *it;
     }
 }
-
-#endif
