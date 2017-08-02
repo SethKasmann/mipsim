@@ -36,7 +36,7 @@ const Alu alu[Max_instructions] =
     _mfhi,  _mthi,  _mflo,  _mtlo, _null, _null, _null, _null,
     _null,  _mult, _multu,   _div, _divu, _null, _null, _null,
      _add,  _addu,   _sub,  _subu,  _and,   _or,  _xor,  _nor,
-    _null,  _null,  _null,   _slt, _sltu, _null, _null, _null,
+    _null,  _null,   _slt,  _sltu, _null, _null, _null, _null,
     _null,  _null,  _null,  _null, _null, _null, _null, _null,
     _null,  _null,  _null,  _null, _null, _null, _null, _null,
     _null,  _bltz,     _j,   _jal,  _beq,  _bne, _blez, _bgtz,
@@ -66,6 +66,8 @@ void overflow_sub(int param1, int param2)
 void _null(Registers& r, Decoder& d, Memory& mem)
 {
     std::cout << "NULL?...\n";
+    int z;
+    std::cin >> z;
     return;
 }
 
@@ -115,8 +117,7 @@ void _sys(Registers& r, Decoder& d, Memory& mem)
     if (r[v0] == 1)
     {
         // Print int.
-        assert(r[a0] < mem.size());
-        std::cout << mem.fetch<Word>(r[a0]);
+        std::cout << r[a0];
     }
     else if (r[v0] == 4)
     {
