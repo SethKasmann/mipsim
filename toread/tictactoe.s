@@ -1,3 +1,6 @@
+# Tic Tac Toe
+# Written by: rumana
+# https://github.com/rumama/mips
 			.text
 			.globl main
 main:
@@ -34,18 +37,13 @@ PrintBoard:
 			la $a0, board
 			syscall
 
-			#########
 			li $k0, 9
 			beq $s5, $k0, Tie
-			#beq $s5, 9, Tie
-
 			addi $s5, $s5, 1
 
-			###########
 			li  $k0, 2
 			div $s0, $k0
 			mfhi $t0
-			#rem $t0, $s0, 2
 			addi $s0, $s0, 1
 			bnez $t0, Player0
 
