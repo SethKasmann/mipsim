@@ -293,9 +293,9 @@ void encode_text_labels(std::string& filename, size_t address, std::vector<Label
 }   
 
 /* Returns true if the instruction is a r-type instruction */
-bool is_r_type(Instruction i)
+bool is_i_type(Instruction i)
 {
-    return i & 0x31;
+    return i & 0xfc000000;
 }
 
 /* Converts a vector of string tokens to a MIPS instruction */
@@ -324,8 +324,8 @@ Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
     // 1. Register value
     // 2. Immediate/Offset value
     // 3. Shifts
-    int reg_shift = is_r_type(ret) ? 11 : 16;
-    int imm_shift = is_r_type(ret) ?  6 :  0;
+    int reg_shift = is_i_type(ret) ? 16 : 11;
+    int imm_shift = is_i_type(ret) ?  0 :  6;
     for (it; it != tokens.end(); ++it)
     {
         // Handle registers.
@@ -337,7 +337,7 @@ Instruction encode(std::vector<std::string> tokens, std::vector<Label>& labels)
         // Handle immediate values.
         else if (isdigit(*it->begin()) || *it->begin() == '-')
         {
-            ret |= static_cast<Instruction>(std::stoi(*it) & 0xffff) << imm_shift;
+            ret |= uint16_t(std::stoi(*it) << imm_shift);
         }
         // Handle lables.
         else
