@@ -73,43 +73,43 @@ void _null(Registers& r, Decoder& d, Memory& mem)
 
 void _sll(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rt()] << d.shamt();
+    r[d.rd] = r[d.rt] << d.shamt;
 }
 
 void _srl(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rt()] >> d.shamt();
+    r[d.rd] = r[d.rt] >> d.shamt;
 }
 
 void _sra(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = (r[d.rt()] >> d.shamt()) | (r[d.rt()] & 0x80000000);
+    r[d.rd] = (r[d.rt] >> d.shamt) | (r[d.rt]);
 }
 
 void _sllv(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rt()] << r[d.rs()];
+    r[d.rd] = r[d.rt] << r[d.rs];
 }
 
 void _srlv(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rt()] >> r[d.rs()];
+    r[d.rd] = r[d.rt] >> r[d.rs];
 }
 
 void _srav(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = (r[d.rt()] >> r[d.rs()]) | (r[d.rt()] & 0x80000000);
+    r[d.rd] = (r[d.rt] >> r[d.rs]) | (r[d.rt]);
 }
 
 void _jr(Registers& r, Decoder& d, Memory& mem)
 {
-    r[pc] = r[d.rd()];
+    r[pc] = r[d.rd];
 }
 
 void _jalr(Registers& r, Decoder& d, Memory& mem)
 {
     r[ra] = r[pc] + 4;
-    r[pc] = r[d.rd()];
+    r[pc] = r[d.rd];
 }
 
 void _sys(Registers& r, Decoder& d, Memory& mem)
@@ -154,221 +154,221 @@ void _sys(Registers& r, Decoder& d, Memory& mem)
 
 void _mfhi(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[hi];
+    r[d.rd] = r[hi];
 }
 
 void _mthi(Registers& r, Decoder& d, Memory& mem)
 {
-    r[hi] = r[d.rs()];
+    r[hi] = r[d.rs];
 }
 
 void _mflo(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[lo];
+    r[d.rd] = r[lo];
 }
 
 void _mtlo(Registers& r, Decoder& d, Memory& mem)
 {
-    r[lo] = r[d.rs()];
+    r[lo] = r[d.rs];
 }
 
 void _mult(Registers& r, Decoder& d, Memory& mem)
 {  
-    int64_t result = static_cast<int64_t>(r[d.rd()]) * r[d.rt()];
+    int64_t result = static_cast<int64_t>(r[d.rd]) * r[d.rt];
     r[lo] = static_cast<Register>(result);
     r[hi] = static_cast<Register>(result >> 32);
 }
 
 void _multu(Registers& r, Decoder& d, Memory& mem)
 {
-    uint64_t result = static_cast<uint64_t>(r[d.rd()]) * r[d.rt()];
+    uint64_t result = static_cast<uint64_t>(r[d.rd]) * r[d.rt];
     r[lo] = static_cast<Register>(result);
     r[hi] = static_cast<Register>(result >> 32);
 }
 
 void _div(Registers& r, Decoder& d, Memory& mem)
 {
-    r[lo] = r[d.rd()] / r[d.rt()];
-    r[hi] = r[d.rd()] % r[d.rt()];
+    r[lo] = r[d.rd] / r[d.rt];
+    r[hi] = r[d.rd] % r[d.rt];
 }
 
 void _divu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[lo] = static_cast<uint32_t>(r[d.rd()]) / static_cast<uint32_t>(r[d.rt()]);
-    r[hi] = static_cast<uint32_t>(r[d.rd()]) % static_cast<uint32_t>(r[d.rt()]);
+    r[lo] = static_cast<uint32_t>(r[d.rd]) / static_cast<uint32_t>(r[d.rt]);
+    r[hi] = static_cast<uint32_t>(r[d.rd]) % static_cast<uint32_t>(r[d.rt]);
 }
 
 void _add(Registers& r, Decoder& d, Memory& mem)
 {
-    overflow_add(r[d.rs()], r[d.rt()]);
-    r[d.rd()] = r[d.rs()] + r[d.rt()];
+    overflow_add(r[d.rs], r[d.rt]);
+    r[d.rd] = r[d.rs] + r[d.rt];
 }
 
 void _addu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rs()] + r[d.rt()];
+    r[d.rd] = r[d.rs] + r[d.rt];
 }
 
 void _sub(Registers& r, Decoder& d, Memory& mem)
 {
-    overflow_sub(r[d.rs()], r[d.rt()]);
-    r[d.rd()] = r[d.rs()] - r[d.rt()];
+    overflow_sub(r[d.rs], r[d.rt]);
+    r[d.rd] = r[d.rs] - r[d.rt];
 }
 
 void _subu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rs()] + r[d.rt()];
+    r[d.rd] = r[d.rs] + r[d.rt];
 }
 
 void _and(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rs()] & r[d.rt()];
+    r[d.rd] = r[d.rs] & r[d.rt];
 }
 
 void _or(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rs()] | r[d.rt()];
+    r[d.rd] = r[d.rs] | r[d.rt];
 }
 
 void _xor(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rs()] ^ r[d.rt()];
+    r[d.rd] = r[d.rs] ^ r[d.rt];
 }
 
 void _nor(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = ~(r[d.rs()] | r[d.rt()]);
+    r[d.rd] = ~(r[d.rs] | r[d.rt]);
 }
 
 void _slt(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rt()] < r[d.rs()];
+    r[d.rd] = r[d.rt] < r[d.rs];
 }
 
 void _sltu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd()] = r[d.rt()] < r[d.rs()];
+    r[d.rd] = r[d.rt] < r[d.rs];
 }
 
 void _bltz(Registers& r, Decoder& d, Memory& mem)
 {
-    if (r[d.rs()] == r[d.rt()])
-        r[pc] = d.imm();
+    if (r[d.rs] == r[d.rt])
+        r[pc] = d.imm;
 }
 
 void _j(Registers& r, Decoder& d, Memory& mem)
 {   
-    r[pc] = d.imm();
+    r[pc] = d.addrs;
 }
 
 void _jal(Registers& r, Decoder& d, Memory& mem)
 {
     r[ra] = r[pc] + 4;
-    r[pc] = d.imm();
+    r[pc] = d.addrs;
 }
 
 void _beq(Registers& r, Decoder& d, Memory& mem)
 {
-    if (r[d.rs()] == r[d.rt()])
-        r[pc] = d.imm();
+    if (r[d.rs] == r[d.rt])
+        r[pc] = d.imm;
 }
 
 void _bne(Registers& r, Decoder& d, Memory& mem)
 {
-    if (r[d.rs()] != r[d.rt()])
-        r[pc] = d.imm();
+    if (r[d.rs] != r[d.rt])
+        r[pc] = d.imm;
 }
 
 void _blez(Registers& r, Decoder& d, Memory& mem)
 {
-    if (r[d.rt()] <= r[zero])
-        r[pc] = d.imm();
+    if (r[d.rt] <= r[zero])
+        r[pc] = d.imm;
 }
 
 void _bgtz(Registers& r, Decoder& d, Memory& mem)
 {
-    if (r[d.rt()] > r[zero])
-        r[pc] = d.imm();
+    if (r[d.rt] > r[zero])
+        r[pc] = d.imm;
 }
 
 void _addi(Registers& r, Decoder& d, Memory& mem)
 {
-    overflow_add(r[d.rs()], d.imm());
-    r[d.rt()] = r[d.rs()] + d.imm();
+    overflow_add(r[d.rs], d.imm);
+    r[d.rt] = r[d.rs] + d.imm;
 }
 
 void _addiu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = r[d.rs()] + d.imm();
+    r[d.rt] = r[d.rs] + d.imm;
 }
 
 void _slti(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = r[d.rs()] < d.imm();
+    r[d.rt] = r[d.rs] < d.imm;
 }
 
 void _sltiu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = r[d.rs()] < d.imm();
+    r[d.rt] = r[d.rs] < d.imm;
 }
 
 void _andi(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = r[d.rs()] & d.imm();
+    r[d.rt] = r[d.rs] & d.imm;
 }
 
 void _ori(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = r[d.rs()] | d.imm();
+    r[d.rt] = r[d.rs] | d.imm;
 }
 
 void _xori(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = r[d.rs()] ^ d.imm();
+    r[d.rt] = r[d.rs] ^ d.imm;
 }
 
 void _lui(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = d.imm() << 16;
+    r[d.rt] = d.imm << 16;
 }
 
 void _lb(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = static_cast<Register>(mem.fetch<Byte>(r[d.rs()] + d.imm()));
+    r[d.rt] = static_cast<Register>(mem.fetch<Byte>(r[d.rs] + d.imm));
 }
 
 void _lh(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = mem.fetch<HalfWord>(r[d.rs()] + d.imm());
+    r[d.rt] = mem.fetch<HalfWord>(r[d.rs] + d.imm);
 }
 
 void _lbu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = static_cast<Register>(mem.fetch<Byte>(r[d.rs()] + d.imm()));
+    r[d.rt] = static_cast<Register>(mem.fetch<Byte>(r[d.rs] + d.imm));
 }
 
 void _lhu(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = mem.fetch<HalfWord>(r[d.rs()] + d.imm());
+    r[d.rt] = mem.fetch<HalfWord>(r[d.rs] + d.imm);
 }
 
 void _lw(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rt()] = mem.fetch<Word>(r[d.rs()] + d.imm());
+    r[d.rt] = mem.fetch<Word>(r[d.rs] + d.imm);
 }
 
 void _sb(Registers& r, Decoder& d, Memory& mem)
 {
-    mem.store<Byte>(static_cast<Byte>(r[d.rt()]), r[d.rs()] + d.imm());
+    mem.store<Byte>(static_cast<Byte>(r[d.rt]), r[d.rs] + d.imm);
 }
 
 void _sh(Registers& r, Decoder& d, Memory& mem)
 {
-    mem.store<HalfWord>(r[d.rt()], r[d.rs()] + d.imm());
+    mem.store<HalfWord>(r[d.rt], r[d.rs] + d.imm);
 }
 
 void _sw(Registers& r, Decoder& d, Memory& mem)
 {
-    mem.store<Word>(r[d.rt()], r[d.rs()] + d.imm());
+    mem.store<Word>(r[d.rt], r[d.rs] + d.imm);
 }
 
