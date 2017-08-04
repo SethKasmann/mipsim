@@ -3,141 +3,85 @@
 
 typedef uint32_t Instruction;
 
-const int32_t I_flag = 0x40;
-
-enum FunctionType
+/* Generates a compile time bitmask between bit indecies X and Y inclusive. */
+template<int X, int Y, bool B=false>
+struct BitMask
 {
-	r_type,
-	i_type,
-	j_type
+	static const Instruction value = 1 << X | BitMask<X - 1, Y, X == Y>::value;
 };
 
-class Decoder
+/* Base case specialization. */
+template<int X, int Y>
+struct BitMask<X, Y, true>
 {
-public:
+	static const Instruction value = 0;
+};
+
+/* ANDS the instruction to the bitmask and shifts bits to the lsb. */
+template<int X, int Y = X>
+struct Bits
+{
+	int operator()(Instruction x)
+	{
+		return (x & BitMask<X, Y>::value) >> Y;
+	}
+};
+
+/* Specialization when determining the opcode (bits 31 - 26). If the opcode
+   is not 0, add the I-Flag (64). */
+template<int Y>
+struct Bits<31, Y>
+{
+	int operator()(Instruction x)
+	{
+		x = (x & BitMask<31, Y>::value) >> Y;
+		return x ? x + 64 : x;
+	}
+};
+
+/* Decoder class used to store each part of a Mips instruction.
+	    opcode - Indicates operation, or arithmetic family of operations.
+	             Instead of a separate funct code variable for R-Type 
+	             instructions, if the opcode is 0 (R-Type) the funct code 
+	             is stored. If the opcode is not 0 (I-Type) then a flag (64) 
+	             is added to the opcode and stored. This way R-Type and I-Type
+	             instrcutions can index the same array (0 - 127).
+	        rs - Source register for R-Type and I-Type.
+	        rt - Source register for R-Type, destination register for I-Type.
+	        rd - Destination register for R-Type.
+	     shamt - Shift amount.
+	     addrs - 26 bit address for J-Type.
+	       imm - 16-bit signed immediate value for I-Type. */
+struct Decoder
+{
+	// Stores the opcode and function arguments of an instruction.
 	void decode(Instruction i)
 	{
-		fun_index = param1 = param2 = param3 = 0;
-		FunctionType t = get_type(i);
+		opcode = Bits<31, 26>()(i);
+		rs     = Bits<25, 21>()(i);
+		rt     = Bits<20, 16>()(i);
 
-		if (t == r_type)
-			decode_r_type(i);
-		else if (t == i_type)
-			decode_i_type(i);
-		else if (t == j_type)
-			decode_j_type(i);
+		// I-Type and J-Type
+		if (opcode)
+		{
+			imm    = Bits<15, 0 >()(i);
+			addrs  = Bits<25, 0>()(i);
+		}
+		// R-Type
+		else
+		{
+			rd     = Bits<15, 11>()(i);
+			shamt  = Bits<10, 6 >()(i);
+			opcode = Bits< 5, 0 >()(i);
+		}
 	}
-	void decode_r_type(Instruction i);
-	void decode_i_type(Instruction i);
-	void decode_j_type(Instruction i);
-	friend std::ostream& operator<<(std::ostream& o, const Decoder & d);
-	int32_t fi() const
-	{
-		return fun_index;
-	}
-	int32_t rs() const
-	{
-		return param1;
-	}
-	int32_t shamt() const
-	{
-		return param1;
-	}
-	int32_t rt() const
-	{
-		return param2;
-	}
-	int32_t rd() const
-	{
-		return param3;
-	}
-	int32_t imm() const
-	{
-		return param3;
-	}
-private:
-	uint32_t opcode(Instruction i) const
-	{
-	    return (i & 0xfc000000) >> 26;
-	}
-	int32_t addaress() const
-	{
-		return param1;
-	}
-	int32_t rs(Instruction i) const
-	{
-	    return i >> 21 & 0x1f;
-	}
-	int32_t rt(Instruction i) const
-	{
-	    return i >> 16 & 0x1f;
-	}
-	int32_t rd(Instruction i) const
-	{
-	    return i >> 11 & 0x1f;
-	}
-	int32_t imm(Instruction i) const
-	{
-	    return int16_t(i & 0xffff);
-	}
-	int32_t funct(Instruction i) const
-	{
-	    return i & 0x3f;
-	}
-	int32_t shamt(Instruction i) const
-	{
-		return (i & 0x7c0) >> 6;
-	}
-	int32_t address(Instruction i) const
-	{
-		return i & 0x3ffffff;
-	}
-	FunctionType get_type(Instruction i)
-	{
-		uint32_t op = opcode(i);
-		return op == 0 ? r_type : op == 2 || op == 3 ? j_type : i_type;
-	}
-	// Should these be signed / unsigned short?
-	int32_t fun_index;
-	int32_t param1;
-	int32_t param2;
-	int32_t param3;
+	int opcode;
+	int rs;
+	int rt;
+	int rd;
+	int shamt;
+	int addrs;
+	short imm;
 };
-
-inline std::ostream& operator<<(std::ostream& o, const Decoder & d)
-{
-	o << "<Decoder"
-	  << ", fun_index:" << d.fun_index 
-	  << ", param1:"    << d.param1      
-	  << ", param2:"    << d.param2 
-	  << ", param3:"    << d.param3 
-	  << ">"            << std::endl;
-}
-
-inline void Decoder::decode_r_type(Instruction i)
-{
-	fun_index = funct(i);
-	param3 = rd(i);
-	param2 = rt(i);
-	// Special case for shifts.
-	if (fun_index <= 3)
-		param1 = shamt(i);
-	else
-		param1 = rs(i);
-}
-
-inline void Decoder::decode_i_type(Instruction i)
-{
-	fun_index = opcode(i) | I_flag;
-	param1 = rs(i);
-	param2 = rt(i);
-	param3 = imm(i);
-}
-
-inline void Decoder::decode_j_type(Instruction i)
-{
-	fun_index = opcode(i) | I_flag;
-	param3 = address(i);
-}
 
 #endif
