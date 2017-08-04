@@ -85,6 +85,6 @@ namespace mips
     /* Index the alu (or function array) to call the correct function */
     void execute(Memory& mem, Registers& regs, Decoder& dec)
     {
-        alu[dec.fi()](regs, dec, mem);
+        alu[dec.opcode](regs, dec, mem);
     }
 }
