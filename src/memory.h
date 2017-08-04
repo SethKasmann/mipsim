@@ -31,17 +31,17 @@ template<> size_t size_of<Byte>();
 class Memory
 {
 public:
-	void init_stack();
-	size_t size() const;
-	template<typename T> void push(T t);
-	template<typename T> void store(T t, int i);
-	template<typename T> T fetch(int i) const;
-	template<typename T> void probe(int first) const;
+    void init_stack();
+    size_t size() const;
+    template<typename T> void push(T t);
+    template<typename T> void store(T t, int i);
+    template<typename T> T fetch(int i) const;
+    template<typename T> void probe(int first) const;
 private:
-	std::vector<Byte> _mem;
-	// Variable to keep track of the location of the stack. Used for detecting
-	// stack overflow.
-	int _stack;
+    std::vector<Byte> _mem;
+    // Variable to keep track of the location of the stack. Used for detecting
+    // stack overflow.
+    int _stack;
 };
 
 #endif

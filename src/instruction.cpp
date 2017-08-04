@@ -83,7 +83,7 @@ void _srl(Registers& r, Decoder& d, Memory& mem)
 
 void _sra(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd] = (r[d.rt] >> d.shamt) | (r[d.rt]);
+    r[d.rd] = (r[d.rt] >> d.shamt) | (r[d.rt] & 0x80000000);
 }
 
 void _sllv(Registers& r, Decoder& d, Memory& mem)
@@ -98,7 +98,7 @@ void _srlv(Registers& r, Decoder& d, Memory& mem)
 
 void _srav(Registers& r, Decoder& d, Memory& mem)
 {
-    r[d.rd] = (r[d.rt] >> r[d.rs]) | (r[d.rt]);
+    r[d.rd] = (r[d.rt] >> r[d.rs]) | (r[d.rt] & 0x80000000);
 }
 
 void _jr(Registers& r, Decoder& d, Memory& mem)
